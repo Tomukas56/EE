@@ -64,7 +64,7 @@ __decorate([
 ], Station.prototype, "opening_hours", void 0);
 __decorate([
     OneToMany(() => Connector, (connector) => connector.station, { cascade: true }),
-    __metadata("design:type", Array)
+    __metadata("design:type", Object)
 ], Station.prototype, "connectors", void 0);
 Station = __decorate([
     Entity()

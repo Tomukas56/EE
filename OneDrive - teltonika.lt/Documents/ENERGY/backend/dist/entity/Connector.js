@@ -66,7 +66,7 @@ __decorate([
 ], Connector.prototype, "tariff", void 0);
 __decorate([
     ManyToOne(() => Station, (station) => station.connectors),
-    __metadata("design:type", Station)
+    __metadata("design:type", Object)
 ], Connector.prototype, "station", void 0);
 Connector = __decorate([
     Entity()

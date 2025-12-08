@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm"
+import type { Relation } from "typeorm"
 import { Station } from "./Station.js"
 
 export enum ConnectorType {
@@ -44,5 +45,5 @@ export class Connector {
     tariff!: string
 
     @ManyToOne(() => Station, (station) => station.connectors)
-    station!: Station
+    station!: Relation<Station>
 }

@@ -1,3 +1,4 @@
+import type { Relation } from "typeorm";
 import { Station } from "./Station.js";
 export declare enum ConnectorType {
     CCS = "CCS",
@@ -19,6 +20,6 @@ export declare class Connector {
     max_power_kw: number;
     status: ConnectorStatus;
     tariff: string;
-    station: Station;
+    station: Relation<Station>;
 }
 //# sourceMappingURL=Connector.d.ts.map

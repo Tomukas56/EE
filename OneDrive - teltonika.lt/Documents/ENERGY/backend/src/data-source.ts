@@ -12,10 +12,12 @@ if (!DB_USER || !DB_PASSWORD || !DB_NAME) {
     throw new Error("Missing database credentials in environment variables.");
 }
 
+console.log(`Connecting to DB host: 127.0.0.1, User: ${DB_USER}, Password Length: ${DB_PASSWORD?.length}`);
+
 export const AppDataSource = new DataSource({
     type: "postgres",
-    host: "localhost",
-    port: 5432,
+    host: "127.0.0.1",
+    port: parseInt(process.env.DB_PORT || "5432"),
     username: DB_USER,
     password: DB_PASSWORD,
     database: DB_NAME,

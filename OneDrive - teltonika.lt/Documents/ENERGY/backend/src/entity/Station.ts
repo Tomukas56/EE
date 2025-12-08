@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm"
+import type { Relation } from "typeorm"
 import { Connector } from "./Connector.js"
 
 @Entity()
@@ -36,5 +37,5 @@ export class Station {
     opening_hours!: string
 
     @OneToMany(() => Connector, (connector) => connector.station, { cascade: true })
-    connectors!: Connector[]
+    connectors!: Relation<Connector[]>
 }

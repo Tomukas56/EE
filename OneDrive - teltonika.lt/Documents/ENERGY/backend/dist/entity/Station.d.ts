@@ -1,3 +1,4 @@
+import type { Relation } from "typeorm";
 import { Connector } from "./Connector.js";
 export declare class Station {
     id: string;
@@ -9,6 +10,6 @@ export declare class Station {
     website: string;
     phone: string;
     opening_hours: string;
-    connectors: Connector[];
+    connectors: Relation<Connector[]>;
 }
 //# sourceMappingURL=Station.d.ts.map
