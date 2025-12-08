@@ -14,18 +14,20 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "helmet": "^8.1.0",
+    "node-cron": "^4.2.1",
     "pg": "^8.16.3",
-    "reflect-metadata": "^0.2.2",
-    "typeorm": "^0.3.28"
+    "prisma": "^5.22.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^24.10.1",
+    "@types/node-cron": "^3.0.11",
     "@types/pg": "^8.15.6",
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",

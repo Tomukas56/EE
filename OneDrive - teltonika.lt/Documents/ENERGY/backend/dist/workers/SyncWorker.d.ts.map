@@ -1,0 +1,1 @@
+{"version":3,"file":"SyncWorker.d.ts","sourceRoot":"","sources":["../../src/workers/SyncWorker.ts"],"names":[],"mappings":"AAIA,qBAAa,UAAU;IACnB,OAAO,CAAC,UAAU,CAAa;IAC/B,OAAO,CAAC,IAAI,CAAmC;;IAM/C;;OAEG;IACH,KAAK,IAAI,IAAI;IAeb;;OAEG;IACH,IAAI,IAAI,IAAI;IAOZ;;OAEG;IACG,OAAO,IAAI,OAAO,CAAC,IAAI,CAAC;IAK9B;;OAEG;YACW,YAAY;CAqE7B"}
