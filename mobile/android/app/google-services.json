@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "728526683576",
+    "project_id": "energyenywhere",
+    "storage_bucket": "energyenywhere.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:728526683576:android:9206864eae8daffa47234d",
+        "android_client_info": {
+          "package_name": "com.eniwhere.energy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCEIBKL4FE2iTRo0mTR3-umToy3EzwjOW0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Station {
+  id            String      @id @default(uuid())
+  name          String
+  operator_name String?
+  address       String
+  latitude      Decimal?    @db.Decimal(10, 7)
+  longitude     Decimal?    @db.Decimal(10, 7)
+  is_public     Boolean     @default(true)
+  website       String?
+  phone         String?
+  opening_hours String?
+  connectors    Connector[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("station")
+}
+
+model Connector {
+  id            String          @id @default(uuid())
+  evse_id       String
+  type          ConnectorType
+  max_power_kw  Decimal         @db.Decimal(10, 2)
+  status        ConnectorStatus @default(UNKNOWN)
+  tariff        String?
+  station_id    String
+  station       Station         @relation(fields: [station_id], references: [id], onDelete: Cascade)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@map("connector")
+}
+
+enum ConnectorType {
+  CCS
+  CHAdeMO
+  TYPE2
+  TYPE1
+}
+
+enum ConnectorStatus {
+  AVAILABLE
+  OCCUPIED
+  CHARGING
+  OUTOFORDER
+  UNKNOWN
+}
