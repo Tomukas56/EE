@@ -242,6 +242,18 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> eraseAccount(String reporterId) async {
+    final base = await _liveBase();
+    final uri = Uri.parse('$base/api/account').replace(
+      queryParameters: {'reporterId': reporterId},
+    );
+    final response = await http.delete(uri, headers: _jsonHeaders);
+    if (response.statusCode != 200) {
+      throw Exception('Could not erase server data (${response.statusCode})');
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   Future<void> sendCheckIn({
     required String stationId,
     required String working,

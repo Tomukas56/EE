@@ -212,6 +212,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _maybePromptArrival(Station? destination) {
+    if (ref.read(sessionProvider)?.limitedAccess == true) return;
     if (destination == null || _me == null || !hasCoordinates(destination)) {
       return;
     }
@@ -235,6 +236,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       stationName: station.name,
     );
     if (result == null || !mounted) return;
+    if (ref.read(sessionProvider)?.limitedAccess == true) return;
     final user = ref.read(sessionProvider);
     try {
       await ref.read(apiServiceProvider).sendCheckIn(
@@ -431,8 +433,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Widget build(BuildContext context) {
     final stationsAsync = ref.watch(filteredStationsProvider);
     final destination = ref.watch(destinationStationProvider);
+    final limited = ref.watch(sessionProvider)?.limitedAccess == true;
 
-    if (widget.focusNearest &&
+    if (!limited &&
+        widget.focusNearest &&
         _locateDone &&
         !_didCenterOnDevice &&
         stationsAsync.hasValue) {
@@ -457,11 +461,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.list),
-            onPressed: () => context.pushNamed('list'),
-            tooltip: 'List View',
-          ),
+          if (!limited)
+            IconButton(
+              icon: const Icon(Icons.list),
+              onPressed: () => context.pushNamed('list'),
+              tooltip: 'List View',
+            ),
         ],
       ),
       body: !_locateDone
@@ -519,14 +524,31 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Material(
-                      color: Colors.transparent,
-                      child: CountryFilterBar(),
-                    ),
-                    const SizedBox(height: 8),
-                    const Material(
-                      color: Colors.transparent,
-                      child: StationFilterBar(),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              CountryFilterBar(compact: true),
+                              SizedBox(height: 6),
+                              StationFilterBar(compact: true),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _MapZoomControls(
+                          radiusLabel: formatRadiusKm(radiusKmForZoom(_zoom)),
+                          canZoomIn: _zoom < nearbyMaxZoom - 0.05,
+                          canZoomOut: _zoom > nearbyMinZoom + 0.05,
+                          onZoomIn: () => _nudgeZoom(nearbyZoomStep),
+                          onZoomOut: () => _nudgeZoom(-nearbyZoomStep),
+                          showLocation: false,
+                          onNearest: () {},
+                          onMyLocation: () {},
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -549,7 +571,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     pathParameters: {'id': destination.id},
                   ),
                   onNavigate: () => _openDirections(destination),
-                  onArrived: () => _reportArrival(destination),
+                  onArrived: limited ? null : () => _reportArrival(destination),
                 ),
               Positioned(
                 right: 16,
@@ -561,6 +583,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   onZoomIn: () => _nudgeZoom(nearbyZoomStep),
                   onZoomOut: () => _nudgeZoom(-nearbyZoomStep),
                   showLocation: destination == null,
+                  zoomButtons: false,
+                  showNearest: !limited,
                   onNearest: () => _goToMyLocation(thenNearest: true),
                   onMyLocation: () => _goToMyLocation(),
                 ),
@@ -599,6 +623,8 @@ class _MapZoomControls extends StatelessWidget {
   final VoidCallback onZoomIn;
   final VoidCallback onZoomOut;
   final bool showLocation;
+  final bool zoomButtons;
+  final bool showNearest;
   final VoidCallback onNearest;
   final VoidCallback onMyLocation;
 
@@ -609,6 +635,8 @@ class _MapZoomControls extends StatelessWidget {
     required this.onZoomIn,
     required this.onZoomOut,
     required this.showLocation,
+    this.zoomButtons = true,
+    this.showNearest = true,
     required this.onNearest,
     required this.onMyLocation,
   });
@@ -618,45 +646,49 @@ class _MapZoomControls extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        FloatingActionButton.small(
-          heroTag: 'zoom-in',
-          tooltip: 'Zoom in',
-          onPressed: canZoomIn ? onZoomIn : null,
-          child: const Icon(Icons.add),
-        ),
-        const SizedBox(height: 6),
-        Material(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Text(
-              radiusLabel,
-              style: const TextStyle(
-                color: Color(0xFF111111),
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
+        if (zoomButtons) ...[
+          FloatingActionButton.small(
+            heroTag: 'zoom-in',
+            tooltip: 'Zoom in',
+            onPressed: canZoomIn ? onZoomIn : null,
+            child: const Icon(Icons.add),
+          ),
+          const SizedBox(height: 6),
+          Material(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Text(
+                radiusLabel,
+                style: const TextStyle(
+                  color: Color(0xFF111111),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 6),
-        FloatingActionButton.small(
-          heroTag: 'zoom-out',
-          tooltip: 'Zoom out',
-          onPressed: canZoomOut ? onZoomOut : null,
-          child: const Icon(Icons.remove),
-        ),
-        if (showLocation) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
           FloatingActionButton.small(
-            heroTag: 'nearest',
-            backgroundColor: const Color(0xFF00C48C),
-            onPressed: onNearest,
-            tooltip: 'Nearest station',
-            child: const Icon(Icons.near_me),
+            heroTag: 'zoom-out',
+            tooltip: 'Zoom out',
+            onPressed: canZoomOut ? onZoomOut : null,
+            child: const Icon(Icons.remove),
           ),
-          const SizedBox(height: 12),
+        ],
+        if (showLocation) ...[
+          if (zoomButtons) const SizedBox(height: 12),
+          if (showNearest) ...[
+            FloatingActionButton.small(
+              heroTag: 'nearest',
+              backgroundColor: const Color(0xFF00C48C),
+              onPressed: onNearest,
+              tooltip: 'Nearest station',
+              child: const Icon(Icons.near_me),
+            ),
+            const SizedBox(height: 12),
+          ],
           FloatingActionButton(
             heroTag: 'me',
             onPressed: onMyLocation,
@@ -675,7 +707,7 @@ class _StationPeekCard extends StatefulWidget {
   final VoidCallback onClose;
   final VoidCallback onDetails;
   final VoidCallback onNavigate;
-  final VoidCallback onArrived;
+  final VoidCallback? onArrived;
 
   const _StationPeekCard({
     super.key,
@@ -684,7 +716,7 @@ class _StationPeekCard extends StatefulWidget {
     required this.onClose,
     required this.onDetails,
     required this.onNavigate,
-    required this.onArrived,
+    this.onArrived,
   });
 
   @override
@@ -811,12 +843,14 @@ class _StationPeekCardState extends State<_StationPeekCard> {
                             label: const Text('Go'),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          tooltip: "I've arrived",
-                          onPressed: widget.onArrived,
-                          icon: const Icon(Icons.flag_circle_outlined),
-                        ),
+                        if (widget.onArrived != null) ...[
+                          const SizedBox(width: 8),
+                          IconButton(
+                            tooltip: "I've arrived",
+                            onPressed: widget.onArrived,
+                            icon: const Icon(Icons.flag_circle_outlined),
+                          ),
+                        ],
                       ],
                     ),
                   ],

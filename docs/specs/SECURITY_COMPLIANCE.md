@@ -6,7 +6,7 @@
 **Document status:** Working control — not a CE declaration, GDPR certification, or PCI ROC  
 **Version:** 1.0  
 **Date:** 2026-09-01  
-**Related:** [PRD.md](../PRD.md) §5–7, [SECURITY_AND_THREATS.md](SECURITY_AND_THREATS.md), in-app Agreement (`mobile/lib/legal/service_agreement.dart`)
+**Related:** [PRD.md](../PRD.md) §5–7, [SECURITY_AND_THREATS.md](SECURITY_AND_THREATS.md), in-app Terms (`mobile/lib/legal/service_agreement.dart`), Privacy notice (`privacy_policy.dart`)
 
 This document is the security-requirements register for EE. It states **which laws apply**, **when they apply**, **what we must do**, and **what is still a gap**. It does **not** claim that EE is certified or production-ready.
 
@@ -68,7 +68,7 @@ USB lab builds are **not** “placing on the market”. Listing the app on an EU
 | Minimise attack surface | No unused ports/APIs; restrict Maps key | **Partial** |
 | Reduce impact of incidents | Logging (no secrets), backups, rollback | **Gap** |
 | Security event recording | Authn failures, payments (no PAN), admin actions | **Gap** |
-| User can reset / withdraw data securely | Account deletion / DSR | **Gap** |
+| User can reset / withdraw data securely | Account deletion / DSR | **Partial** — in-app Delete all my data + `DELETE /api/account`; no JWT / DPO |
 
 **Part II — vulnerability handling (manufacturer processes)**
 
@@ -98,7 +98,7 @@ CE marking of a **mobile app** follows Commission guidance for software (electro
 
 | Standard | Why it applies to EE | Status |
 |----------|----------------------|--------|
-| **GDPR** (EU 2016/679) + Lithuanian **BDAR** | Google account, location, crowd reports, later payment metadata | **Gap** — Agreement exists; no privacy policy, DSR, DPIA, RoPA |
+| **GDPR** (EU 2016/679) + Lithuanian **BDAR** | Google account, location, crowd reports, later payment metadata | **Partial** — Terms + Privacy notice in-app; erasure path; no DPIA, RoPA, DPO |
 | **ePrivacy** 2002/58/EC (as implemented) | Device location and identifiers | **Partial** — OS permission; no consent log |
 | **Consumer law** (2011/83, 93/13, Lithuanian CK) | Readable contract; cannot waive mandatory rights | **Partial** — in-app Agreement |
 
@@ -177,7 +177,7 @@ Lab-only: owner PIN (`X-Owner-Pin`), cleartext LAN API, debug Google Maps key. T
 | C-05 | Support period (≥ 5 years unless shorter use) published | CRA Art. 13 | At purchase / store listing | **Gap** |
 | C-06 | Technical file, EU DoC, CE | CRA | **From 11 Dec 2027** for market placement | **Gap** — plan now |
 | C-07 | Secure defaults (no PIN, no HTTP, no debug bypass) | CRA + MASVS | Store | **Gap (prod)** |
-| G-01 | GDPR lawful basis, privacy notice, DSR, DPIA, RoPA | GDPR/BDAR | Already (personal data) | **Gap** |
+| G-01 | GDPR lawful basis, privacy notice, DSR, DPIA, RoPA | GDPR/BDAR | Already (personal data) | **Partial** — notice + Terms + erase; no DPIA/RoPA/DPO |
 | G-02 | Location consent log | ePrivacy / GDPR | Already | **Partial** |
 | S-01 | TLS production | ASVS / CRA confidentiality | Store | **Gap (prod)** |
 | S-02 | OIDC complete (Firebase SHA-1) | Auth | Store | **Partial** |

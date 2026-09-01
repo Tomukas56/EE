@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../../legal/app_readme.dart';
+import '../../legal/privacy_policy.dart';
 import '../../legal/service_agreement.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/auth_service.dart';
+import '../../screens/auth/splash_screen.dart';
 import '../../widgets/app_emblem.dart';
 import '../../widgets/google_mark.dart';
+import '../../widgets/legal_document_card.dart';
 
-/// First screen: accept the Agreement, then sign in with Google.
+/// First screen: accept Terms, Privacy, and README, then sign in with Google.
 class WelcomeScreen extends ConsumerStatefulWidget {
   const WelcomeScreen({super.key});
 
@@ -31,6 +34,19 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   Future<void> _setAccepted(bool value) async {
     setState(() => _accepted = value);
     await ref.read(authServiceProvider).persistAgreementAccepted(value);
+  }
+
+  Future<void> _skip() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await ref.read(sessionProvider.notifier).enterSkippedGuest();
+    } catch (error) {
+      if (!mounted) return;
+      _showMessage('$error');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _signIn() async {
@@ -85,10 +101,12 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 10),
+                    const AppMottoBanner(compact: true),
+                    const SizedBox(height: 10),
                     Text(
-                      'Read the Agreement and README, tick that you agree, '
-                      'then continue with Google.',
+                      'Read the Terms of use, Privacy notice, and README, tick that you agree, '
+                      'then continue with Google. Skip opens only the Stations map.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
@@ -96,14 +114,20 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _DocumentCard(
+                    LegalDocumentCard(
                       title: ServiceAgreement.title,
                       subtitle: ServiceAgreement.subtitle,
                       sections: ServiceAgreement.sections,
                       initiallyExpanded: true,
                     ),
                     const SizedBox(height: 12),
-                    _DocumentCard(
+                    LegalDocumentCard(
+                      title: PrivacyPolicy.title,
+                      subtitle: PrivacyPolicy.subtitle,
+                      sections: PrivacyPolicy.sections,
+                    ),
+                    const SizedBox(height: 12),
+                    LegalDocumentCard(
                       title: AppReadme.title,
                       subtitle: AppReadme.subtitle,
                       sections: AppReadme.sections,
@@ -129,7 +153,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                         checkColor: Colors.white,
                         controlAffinity: ListTileControlAffinity.leading,
                         title: const Text(
-                          'I have read the Agreement and README and I agree',
+                          'I have read the Terms of use, Privacy notice and README and I agree',
                           style: TextStyle(
                             color: Color(0xFF111111),
                             fontSize: 14,
@@ -170,7 +194,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                       if (!_accepted) ...[
                         const SizedBox(height: 4),
                         const Text(
-                          'Tick the box to sign the Agreement first.',
+                          'Tick the box after you have read the documents.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 12,
@@ -178,82 +202,17 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                           ),
                         ),
                       ],
+                      const SizedBox(height: 4),
+                      TextButton(
+                        onPressed: _busy ? null : _skip,
+                        child: const Text('Skip — map only'),
+                      ),
                     ],
                   ),
                 ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DocumentCard extends StatelessWidget {
-  const _DocumentCard({
-    required this.title,
-    required this.subtitle,
-    required this.sections,
-    this.initiallyExpanded = false,
-  });
-
-  final String title;
-  final String subtitle;
-  final List<({String heading, String body})> sections;
-  final bool initiallyExpanded;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      elevation: 2,
-      borderRadius: BorderRadius.circular(16),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          initiallyExpanded: initiallyExpanded,
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          iconColor: const Color(0xFF111111),
-          collapsedIconColor: const Color(0xFF111111),
-          title: Text(
-            title,
-            style: const TextStyle(
-              color: Color(0xFF111111),
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
-          ),
-          subtitle: Text(
-            subtitle,
-            style: const TextStyle(color: Color(0xFF3A3A3C), fontSize: 13),
-          ),
-          children: [
-            for (final section in sections) ...[
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  section.heading,
-                  style: const TextStyle(
-                    color: Color(0xFF111111),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                section.body,
-                style: const TextStyle(
-                  color: Color(0xFF111111),
-                  fontSize: 13,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-          ],
         ),
       ),
     );

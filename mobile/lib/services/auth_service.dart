@@ -18,7 +18,10 @@ class AuthException implements Exception {
 
 class AuthService {
   static const _sessionKey = 'ee.session.user';
-  static const agreementKey = 'ee.agreement.accepted';
+  /// Bump when Terms / Privacy change so the welcome tick is required again.
+  static const agreementKey = 'ee.legal.bundle.v2';
+  static const _legacyAgreementKey = 'ee.agreement.accepted';
+  static const skippedKey = 'ee.legal.skipped';
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
 
@@ -30,6 +33,17 @@ class AuthService {
   Future<void> persistAgreementAccepted(bool accepted) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(agreementKey, accepted);
+    if (accepted) {
+      await prefs.setBool(skippedKey, false);
+    }
+  }
+
+  Future<AppUser> enterSkippedGuest() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(skippedKey, true);
+    await prefs.setBool(agreementKey, false);
+    await _persist(AppUser.guest);
+    return AppUser.guest;
   }
 
   static Future<void> ensureFirebase() async {
@@ -115,6 +129,8 @@ class AuthService {
         photoUrl: googleUser.photoUrl,
       );
       await _persist(user);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(skippedKey, false);
       return user;
     } on AuthException {
       rethrow;
@@ -136,5 +152,18 @@ class AuthService {
       } catch (_) {}
     }
     await _persist(null);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(skippedKey, false);
+  }
+
+  /// Wipe EE keys on this device (session, legal tick, vehicle, owner PIN).
+  Future<void> clearAllLocalData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_sessionKey);
+    await prefs.remove(agreementKey);
+    await prefs.remove(_legacyAgreementKey);
+    await prefs.remove('ee.vehicle.profile');
+    await prefs.remove('ee.owner.pin');
+    await prefs.remove(skippedKey);
   }
 }

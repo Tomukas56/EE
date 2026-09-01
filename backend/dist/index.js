@@ -15,6 +15,7 @@ import stationRoutes from './routes/stationRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import crowdRoutes from './routes/crowdRoutes.js';
 import sessionRoutes from './routes/sessionRoutes.js';
+import accountRoutes from './routes/accountRoutes.js';
 import { SyncWorker } from './workers/SyncWorker.js';
 app.get('/', (req, res) => {
     if (req.get('sec-fetch-dest') === 'document') {
@@ -28,6 +29,7 @@ app.use('/api/stations', stationRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/crowd', crowdRoutes);
 app.use('/api/sessions', sessionRoutes);
+app.use('/api/account', accountRoutes);
 // Test database connection and start server
 prisma.$connect()
     .then(async () => {

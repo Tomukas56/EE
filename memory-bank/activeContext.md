@@ -8,6 +8,7 @@ Do **not** claim done: live Stripe/PCI, OCPI occupancy, iOS, CRA/CE, production 
 ## Decisions this session
 - Lab charging is local DB only: energy = elapsed hours × max connector kW (min 1 minute), €0.32/kWh, `payment_method: lab-estimate`.
 - Vehicle profile stays on-device (SharedPreferences), not a User table.
+- Terms of use, Privacy notice, and third-party links are in-app. Erasure is Account → Legal → Delete all my data plus `DELETE /api/account`.
 - Trip planner uses Google Directions when the existing Maps key allows it; otherwise Nominatim + 1.3× straight-line.
 - Filters: country + connector type + min kW. Operator is the existing search field.
 - `npm run dev` is `tsx watch src/index.ts`. Production-style lab still uses `npm start` after `tsc`.

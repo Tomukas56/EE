@@ -43,6 +43,7 @@ class StationDetailScreen extends ConsumerWidget {
       stationName: station.name,
     );
     if (result == null || !context.mounted) return;
+    if (ref.read(sessionProvider)?.limitedAccess == true) return;
     final user = ref.read(sessionProvider);
     try {
       await ref.read(apiServiceProvider).sendCheckIn(
@@ -71,6 +72,7 @@ class StationDetailScreen extends ConsumerWidget {
     StationDetail station,
   ) async {
     final user = ref.read(sessionProvider);
+    if (user?.limitedAccess == true) return;
     try {
       await ref.read(apiServiceProvider).startSession(
             stationId: station.id,
@@ -133,6 +135,7 @@ class StationDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final stationAsync = ref.watch(stationDetailProvider(stationId));
     final openSession = ref.watch(openSessionProvider);
+    final limited = ref.watch(sessionProvider)?.limitedAccess == true;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Station Details')),
@@ -249,6 +252,16 @@ class StationDetailScreen extends ConsumerWidget {
                           (connector) => ConnectorBadge(connector: connector),
                         ),
                       const SizedBox(height: 20),
+                      if (limited)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            'Skip mode: charging and arrival reports are locked. '
+                            'Sign out and accept the Terms to use them.',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        )
+                      else ...[
                       if (openSession != null &&
                           openSession.stationId != station.id)
                         Padding(
@@ -293,6 +306,7 @@ class StationDetailScreen extends ConsumerWidget {
                           label: const Text("I've arrived — confirm status"),
                         ),
                       ),
+                      ],
                     ],
                   ),
                 ),

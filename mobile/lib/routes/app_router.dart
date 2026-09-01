@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
+import '../screens/auth/splash_screen.dart';
 import '../screens/auth/welcome_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/map_screen.dart';
@@ -13,6 +14,7 @@ import '../screens/route/route_planner_screen.dart';
 import '../screens/vehicle/vehicle_registration_screen.dart';
 import '../screens/stations/mark_station_screen.dart';
 import '../screens/stations/owner_review_screen.dart';
+import '../screens/account/legal_account_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
@@ -20,16 +22,41 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
-    initialLocation: '/welcome',
+    initialLocation: '/splash',
     refreshListenable: refresh,
     redirect: (context, state) {
-      final loggedIn = ref.read(sessionProvider) != null;
-      final onWelcome = state.matchedLocation == '/welcome';
+      final loc = state.matchedLocation;
+      if (loc == '/splash') return null;
+      final user = ref.read(sessionProvider);
+      final loggedIn = user != null;
+      final onWelcome = loc == '/welcome';
       if (!loggedIn && !onWelcome) return '/welcome';
       if (loggedIn && onWelcome) return '/home';
+      if (user?.limitedAccess == true) {
+        const locked = {
+          '/vehicle-registration',
+          '/route-planner',
+          '/charging-history',
+          '/payment-history',
+          '/mark-station',
+          '/owner-review',
+          '/list',
+        };
+        if (locked.contains(loc)) return '/home';
+      }
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/splash',
+        name: 'splash',
+        builder: (context, state) => SplashScreen(
+          onFinished: () {
+            final loggedIn = ref.read(sessionProvider) != null;
+            context.go(loggedIn ? '/home' : '/welcome');
+          },
+        ),
+      ),
       GoRoute(
         path: '/welcome',
         name: 'welcome',
@@ -84,6 +111,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/mark-station',
         name: 'mark-station',
         builder: (context, state) => const MarkStationScreen(),
+      ),
+      GoRoute(
+        path: '/legal',
+        name: 'legal',
+        builder: (context, state) => const LegalAccountScreen(),
       ),
       GoRoute(
         path: '/owner-review',

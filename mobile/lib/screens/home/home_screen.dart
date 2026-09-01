@@ -16,11 +16,23 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   _MenuItem? _submenu;
 
-  List<_MenuItem> _rootItems(BuildContext context) {
+  List<_MenuItem> _rootItems(BuildContext context, {required bool limited}) {
+    void lockedTap() {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Skip mode: only Map of stations works. Sign out and accept the Terms to unlock the rest.',
+          ),
+        ),
+      );
+    }
+
     return [
       _MenuItem(
         title: 'Stations',
-        subtitle: 'Map · Nearest · List · Mark new',
+        subtitle: limited
+            ? 'Map only (Skip)'
+            : 'Map · Nearest · List · Mark new',
         icon: Icons.ev_station,
         gradient: AppColors.primaryGradient,
         children: [
@@ -38,17 +50,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             gradient: const LinearGradient(
               colors: [Color(0xFF00C48C), Color(0xFF00D9A0)],
             ),
-            onTap: () => context.pushNamed(
-              'map',
-              queryParameters: {'nearest': '1'},
-            ),
+            locked: limited,
+            onTap: limited
+                ? lockedTap
+                : () => context.pushNamed(
+                      'map',
+                      queryParameters: {'nearest': '1'},
+                    ),
           ),
           _MenuItem(
             title: 'Station list',
             subtitle: 'Search by name or operator',
             icon: Icons.list_alt,
             gradient: AppColors.accentGradient,
-            onTap: () => context.pushNamed('list'),
+            locked: limited,
+            onTap: limited ? lockedTap : () => context.pushNamed('list'),
           ),
           _MenuItem(
             title: 'Mark a new station',
@@ -57,7 +73,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             gradient: const LinearGradient(
               colors: [Color(0xFF00C48C), Color(0xFF0066FF)],
             ),
-            onTap: () => context.pushNamed('mark-station'),
+            locked: limited,
+            onTap: limited ? lockedTap : () => context.pushNamed('mark-station'),
           ),
         ],
       ),
@@ -68,7 +85,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         gradient: const LinearGradient(
           colors: [Color(0xFF7B61FF), Color(0xFF9B7FFF)],
         ),
-        children: [
+        locked: limited,
+        onTap: lockedTap,
+        children: limited
+            ? null
+            : [
           _MenuItem(
             title: 'Trip with charging',
             subtitle: 'Route with a charging stop',
@@ -97,7 +118,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         gradient: const LinearGradient(
           colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
         ),
-        children: [
+        locked: limited,
+        onTap: lockedTap,
+        children: limited
+            ? null
+            : [
           _MenuItem(
             title: 'Charging history',
             subtitle: 'Past sessions',
@@ -120,7 +145,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       _MenuItem(
         title: 'Account',
-        subtitle: 'Profile · Owner · Sign out',
+        subtitle: limited
+            ? 'Legal · Sign out'
+            : 'Profile · Legal · Owner · Sign out',
         icon: Icons.person,
         gradient: const LinearGradient(
           colors: [Color(0xFF3A3A3C), Color(0xFF636366)],
@@ -135,17 +162,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           _MenuItem(
+            title: 'Legal & privacy',
+            subtitle: 'Terms, privacy, delete my data',
+            icon: Icons.gavel,
+            gradient: const LinearGradient(
+              colors: [Color(0xFF0066FF), Color(0xFF00C48C)],
+            ),
+            onTap: () => context.pushNamed('legal'),
+          ),
+          _MenuItem(
             title: 'Owner review',
             subtitle: 'Confirm a physical location',
             icon: Icons.verified_user,
             gradient: const LinearGradient(
               colors: [Color(0xFF0066FF), Color(0xFF7B61FF)],
             ),
-            onTap: () => context.pushNamed('owner-review'),
+            locked: limited,
+            onTap: limited ? lockedTap : () => context.pushNamed('owner-review'),
           ),
           _MenuItem(
             title: 'Sign out',
-            subtitle: 'Return to the Agreement',
+            subtitle: 'Return to Terms of use',
             icon: Icons.logout,
             gradient: const LinearGradient(
               colors: [Color(0xFFFF3B30), Color(0xFFFF6B35)],
@@ -165,7 +202,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       data: (stations) => '${stations.length}',
       orElse: () => '…',
     );
-    final items = _submenu?.children ?? _rootItems(context);
+    final limited = user?.limitedAccess == true;
+    final items = _submenu?.children ?? _rootItems(context, limited: limited);
     final inSubmenu = _submenu != null;
 
     return Scaffold(
@@ -184,6 +222,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 submenuTitle: _submenu?.title,
                 onBack: inSubmenu ? () => setState(() => _submenu = null) : null,
               ),
+              if (limited && !inSubmenu)
+                Material(
+                  color: const Color(0xFFFFB800),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+                    child: Text(
+                      'Skip mode — ${user?.label ?? 'map only'}. '
+                      'Only Map of stations works. Sign out to accept the Terms.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFF111111),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
               Expanded(
                 child: _FillMenu(
                   items: items,
@@ -212,6 +267,7 @@ class _MenuItem {
     required this.gradient,
     this.children,
     this.onTap,
+    this.locked = false,
   });
 
   final String title;
@@ -220,6 +276,7 @@ class _MenuItem {
   final Gradient gradient;
   final List<_MenuItem>? children;
   final VoidCallback? onTap;
+  final bool locked;
 }
 
 class _MenuHeader extends StatelessWidget {
@@ -360,49 +417,69 @@ class _DashboardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox.expand(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          child: Ink(
-            decoration: BoxDecoration(gradient: item.gradient),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(item.icon, size: 80, color: Colors.white),
-                    const SizedBox(height: 14),
-                    Text(
-                      item.title,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        height: 1.1,
-                      ),
+    Widget card = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Ink(
+          decoration: BoxDecoration(gradient: item.gradient),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(item.icon, size: 80, color: Colors.white),
+                  const SizedBox(height: 14),
+                  Text(
+                    item.title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      item.subtitle,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.92),
-                        fontSize: 16,
-                        height: 1.2,
-                      ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    item.subtitle,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.92),
+                      fontSize: 16,
+                      height: 1.2,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
         ),
       ),
     );
+    if (item.locked) {
+      card = ColorFiltered(
+        colorFilter: const ColorFilter.matrix(<double>[
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0, 0, 0, 1, 0,
+        ]),
+        child: card,
+      );
+      card = Stack(
+        children: [
+          Positioned.fill(child: card),
+          const Positioned(
+            top: 12,
+            right: 12,
+            child: Icon(Icons.lock, color: Colors.white70, size: 22),
+          ),
+        ],
+      );
+    }
+    return SizedBox.expand(child: card);
   }
 }

@@ -15,6 +15,12 @@ class SessionNotifier extends StateNotifier<AppUser?> {
 
   bool get isLoggedIn => state != null;
 
+  Future<AppUser> enterSkippedGuest() async {
+    final user = await _auth.enterSkippedGuest();
+    state = user;
+    return user;
+  }
+
   Future<AppUser> signInWithGoogle() async {
     final user = await _auth.signInWithGoogle();
     state = user;
@@ -24,5 +30,10 @@ class SessionNotifier extends StateNotifier<AppUser?> {
   Future<void> signOut() async {
     await _auth.signOut();
     state = null;
+  }
+
+  Future<void> afterRemoteErase() async {
+    await _auth.clearAllLocalData();
+    await signOut();
   }
 }

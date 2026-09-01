@@ -25,6 +25,12 @@ class VehicleNotifier extends StateNotifier<Vehicle?> {
     await prefs.setString(_vehicleKey, jsonEncode(vehicle.toJson()));
     state = vehicle;
   }
+
+  Future<void> clear() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_vehicleKey);
+    state = null;
+  }
 }
 
 final vehicleProvider = StateNotifierProvider<VehicleNotifier, Vehicle?>((ref) {

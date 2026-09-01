@@ -30,7 +30,7 @@ class AppReadme {
           '• Stations — Map, Nearest, List, Mark a new station (published only after the owner confirms the physical location).\n'
           '• Trip — Trip with charging, My vehicle.\n'
           '• History — Charging history, Payments.\n'
-          '• Account — who is signed in, Owner review, Sign out.\n'
+          '• Account — who is signed in, Legal & privacy (terms, notice, third parties, delete my data), Owner review, Sign out.\n'
           'On arrival the app asks if the station is working and if connectors are free (Yes / No / Dismiss).\n'
           'Use the back arrow to return to the root menu.',
     ),

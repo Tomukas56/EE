@@ -6,6 +6,14 @@ class AppUser {
     this.photoUrl,
   });
 
+  static const guest = AppUser(
+    id: 'guest-skip',
+    email: 'skip@local',
+    displayName: 'Skip — map only',
+  );
+
+  bool get limitedAccess => id == guest.id;
+
   final String id;
   final String email;
   final String? displayName;
