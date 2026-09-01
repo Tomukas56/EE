@@ -11,7 +11,8 @@ export declare enum ConnectorStatus {
     OUTOFORDER = "OUTOFORDER",
     UNKNOWN = "UNKNOWN"
 }
-export interface MockStationData {
+export interface StationData {
+    external_id: string;
     name: string;
     operator_name: string;
     address: string;
@@ -30,9 +31,13 @@ export interface MockStationData {
     }[];
 }
 export declare class CPOService {
-    /**
-     * Mock CPO API - simulates fetching station data from external provider
-     */
-    fetchStations(): Promise<MockStationData[]>;
+    private readonly apiKey;
+    private readonly country;
+    private readonly maxResults;
+    constructor();
+    fetchStations(): Promise<StationData[]>;
+    private getJson;
+    private mapPoi;
+    private mapConnectors;
 }
 //# sourceMappingURL=CPOService.d.ts.map

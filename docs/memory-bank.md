@@ -211,3 +211,17 @@
 - **2025-12-08 12:20**: Documentation and Git push
 
 **Total Development Time**: ~4 hours (including troubleshooting)
+
+---
+
+## 2026-08-31 — Local bring-up on macOS 13 (Ventura)
+
+- Cloned/synced repo; nested `OneDrive - teltonika.lt/` tree is a duplicate and should be removed later.
+- Docker is not installed. Database runs on **Postgres.app 18.3, port 5434**, database `energy_db`.
+- `backend/.env` uses `DATABASE_URL` (Prisma does not read `DB_HOST`/`DB_PORT` alone).
+- Stripe v20 throws if constructed with an empty key. `PaymentService` now lazily creates the client so station API can boot without `STRIPE_SECRET_KEY`.
+- `import 'dotenv/config'` is the first backend import so env is available under ESM.
+- Flutter **3.47.2 cannot run on macOS 13** (needs 14). SDK restored to **3.32.8 / Dart 3.8.1**.
+- `mobile/pubspec.yaml`: SDK `>=3.8.0 <4.0.0`, `google_fonts` pinned to `6.2.1`, `assets/google_logo.png` added (welcome screen referenced a missing asset).
+- Verified: `GET /` and `GET /api/stations` return 7 synced stations.
+- Memory Bank files created under `memory-bank/` (projectbrief, productContext, systemPatterns, techContext, activeContext, progress).

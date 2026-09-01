@@ -1,4 +1,3 @@
-// Mock connector types matching Prisma schema
 export enum ConnectorType {
     CCS = "CCS",
     CHAdeMO = "CHAdeMO",
@@ -14,8 +13,8 @@ export enum ConnectorStatus {
     UNKNOWN = "UNKNOWN"
 }
 
-
-export interface MockStationData {
+export interface StationData {
+    external_id: string;
     name: string;
     operator_name: string;
     address: string;
@@ -34,193 +33,212 @@ export interface MockStationData {
     }[];
 }
 
-export class CPOService {
-    /**
-     * Mock CPO API - simulates fetching station data from external provider
-     */
-    async fetchStations(): Promise<MockStationData[]> {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
+type OcmLookup = {
+    Title?: string;
+    WebsiteURL?: string | null;
+    PhonePrimaryContact?: string | null;
+    IsOperational?: boolean | null;
+};
 
-        return [
-            {
-                name: "Ignitis Charging Hub - Vilnius Center",
-                operator_name: "Ignitis",
-                address: "Konstitucijos pr. 20, Vilnius",
-                latitude: 54.6872,
-                longitude: 25.2797,
-                is_public: true,
-                website: "https://ignitis.lt",
-                phone: "+370 700 55 055",
-                opening_hours: "24/7",
-                connectors: [
-                    {
-                        evse_id: "LT*IGN*E001*1",
-                        type: ConnectorType.CCS,
-                        max_power_kw: 150,
-                        status: ConnectorStatus.AVAILABLE,
-                        tariff: "0.35 EUR/kWh"
-                    },
-                    {
-                        evse_id: "LT*IGN*E001*2",
-                        type: ConnectorType.TYPE2,
-                        max_power_kw: 22,
-                        status: ConnectorStatus.CHARGING,
-                        tariff: "0.25 EUR/kWh"
-                    }
-                ]
-            },
-            {
-                name: "Elinta Fast Charge - Kaunas",
-                operator_name: "Elinta",
-                address: "Savanorių pr. 255, Kaunas",
-                latitude: 54.9027,
-                longitude: 23.9570,
-                is_public: true,
-                website: "https://elinta.lt",
-                phone: "+370 37 301 111",
-                opening_hours: "24/7",
-                connectors: [
-                    {
-                        evse_id: "LT*ELN*K002*1",
-                        type: ConnectorType.CCS,
-                        max_power_kw: 50,
-                        status: ConnectorStatus.AVAILABLE,
-                        tariff: "0.30 EUR/kWh"
-                    },
-                    {
-                        evse_id: "LT*ELN*K002*2",
-                        type: ConnectorType.CHAdeMO,
-                        max_power_kw: 50,
-                        status: ConnectorStatus.AVAILABLE,
-                        tariff: "0.30 EUR/kWh"
-                    }
-                ]
-            },
-            {
-                name: "Maxima Shopping Center Charger",
-                operator_name: "Maxima",
-                address: "Ozo g. 25, Vilnius",
-                latitude: 54.7104,
-                longitude: 25.2799,
-                is_public: true,
-                website: "https://maxima.lt",
-                opening_hours: "08:00-22:00",
-                connectors: [
-                    {
-                        evse_id: "LT*MAX*V003*1",
-                        type: ConnectorType.TYPE2,
-                        max_power_kw: 22,
-                        status: ConnectorStatus.OCCUPIED,
-                        tariff: "Free"
-                    },
-                    {
-                        evse_id: "LT*MAX*V003*2",
-                        type: ConnectorType.TYPE2,
-                        max_power_kw: 22,
-                        status: ConnectorStatus.AVAILABLE,
-                        tariff: "Free"
-                    }
-                ]
-            },
-            {
-                name: "Tesla Supercharger - Vilnius",
-                operator_name: "Tesla",
-                address: "Ukmergės g. 369A, Vilnius",
-                latitude: 54.7290,
-                longitude: 25.2906,
-                is_public: false,
-                website: "https://tesla.com",
-                phone: "+370 800 00 000",
-                opening_hours: "24/7",
-                connectors: [
-                    {
-                        evse_id: "LT*TSL*V004*1",
-                        type: ConnectorType.CCS,
-                        max_power_kw: 250,
-                        status: ConnectorStatus.AVAILABLE,
-                        tariff: "0.40 EUR/kWh"
-                    },
-                    {
-                        evse_id: "LT*TSL*V004*2",
-                        type: ConnectorType.CCS,
-                        max_power_kw: 250,
-                        status: ConnectorStatus.CHARGING,
-                        tariff: "0.40 EUR/kWh"
-                    },
-                    {
-                        evse_id: "LT*TSL*V004*3",
-                        type: ConnectorType.CCS,
-                        max_power_kw: 250,
-                        status: ConnectorStatus.AVAILABLE,
-                        tariff: "0.40 EUR/kWh"
-                    }
-                ]
-            },
-            {
-                name: "Ignitis Green Energy Hub",
-                operator_name: "Ignitis",
-                address: "Žirmūnų g. 139, Vilnius",
-                latitude: 54.7022,
-                longitude: 25.2904,
-                is_public: true,
-                website: "https://ignitis.lt",
-                phone: "+370 700 55 055",
-                opening_hours: "24/7",
-                connectors: [
-                    {
-                        evse_id: "LT*IGN*E005*1",
-                        type: ConnectorType.CCS,
-                        max_power_kw: 150,
-                        status: ConnectorStatus.AVAILABLE,
-                        tariff: "0.35 EUR/kWh"
-                    },
-                    {
-                        evse_id: "LT*IGN*E005*2",
-                        type: ConnectorType.TYPE2,
-                        max_power_kw: 22,
-                        status: ConnectorStatus.AVAILABLE,
-                        tariff: "0.25 EUR/kWh"
-                    }
-                ]
-            },
-            {
-                name: "Elinta Downtown Kaunas",
-                operator_name: "Elinta",
-                address: "Laisvės al. 53, Kaunas",
-                latitude: 54.8967,
-                longitude: 23.9157,
-                is_public: true,
-                phone: "+370 37 301 111",
-                opening_hours: "06:00-23:00",
-                connectors: [
-                    {
-                        evse_id: "LT*ELN*K006*1",
-                        type: ConnectorType.TYPE2,
-                        max_power_kw: 11,
-                        status: ConnectorStatus.AVAILABLE,
-                        tariff: "0.20 EUR/kWh"
-                    }
-                ]
-            },
-            {
-                name: "LIDL Parking Charger",
-                operator_name: "LIDL",
-                address: "Ukmergės g. 282, Vilnius",
-                latitude: 54.7250,
-                longitude: 25.2856,
-                is_public: true,
-                opening_hours: "07:00-22:00",
-                connectors: [
-                    {
-                        evse_id: "LT*LDL*V007*1",
-                        type: ConnectorType.TYPE2,
-                        max_power_kw: 22,
-                        status: ConnectorStatus.OUTOFORDER,
-                        tariff: "Free"
-                    }
-                ]
-            }
-        ];
+type OcmConnection = {
+    ID?: number;
+    ConnectionTypeID?: number;
+    Reference?: string | null;
+    StatusTypeID?: number;
+    PowerKW?: number | null;
+    Quantity?: number | null;
+};
+
+type OcmPoi = {
+    ID: number;
+    UUID?: string;
+    OperatorID?: number;
+    UsageTypeID?: number;
+    StatusTypeID?: number;
+    UsageCost?: string | null;
+    AddressInfo?: {
+        Title?: string;
+        AddressLine1?: string;
+        AddressLine2?: string;
+        Town?: string;
+        Postcode?: string;
+        AccessComments?: string;
+        ContactTelephone1?: string;
+        RelatedURL?: string;
+        Latitude?: number;
+        Longitude?: number;
+    };
+    Connections?: OcmConnection[];
+};
+
+const SKIP_STATION_STATUS_IDS = new Set([150, 200, 210]);
+const PUBLIC_USAGE_IDS = new Set([1, 4, 5, 7]);
+
+/** OCM ConnectionType IDs that map onto our Prisma enums. Others are skipped. */
+const CONNECTION_TYPE_MAP: Record<number, ConnectorType> = {
+    1: ConnectorType.TYPE1,
+    2: ConnectorType.CHAdeMO,
+    25: ConnectorType.TYPE2,
+    32: ConnectorType.CCS,
+    33: ConnectorType.CCS,
+    27: ConnectorType.CCS,
+    1036: ConnectorType.TYPE2,
+};
+
+const OCM_BASE = "https://api.openchargemap.io/v3";
+
+export class CPOService {
+    private readonly apiKey: string;
+    private readonly country: string;
+    private readonly maxResults: number;
+
+    constructor() {
+        this.apiKey = (process.env.CPOAPI || "").trim();
+        this.country = (process.env.OCM_COUNTRY || "LT").trim();
+        this.maxResults = Number(process.env.OCM_MAX_RESULTS || 5000);
     }
+
+    async fetchStations(): Promise<StationData[]> {
+        if (!this.apiKey) {
+            throw new Error("CPOAPI is not set — cannot fetch Open Charge Map data");
+        }
+
+        const [reference, pois] = await Promise.all([
+            this.getJson<Record<string, OcmLookup[]>>("referencedata"),
+            this.getJson<OcmPoi[]>(
+                `poi/?output=json&countrycode=${encodeURIComponent(this.country)}` +
+                `&maxresults=${this.maxResults}&compact=true&verbose=false`
+            ),
+        ]);
+
+        const operators = indexById(reference.Operators || []);
+        const usageTypes = indexById(reference.UsageTypes || []);
+
+        const stations: StationData[] = [];
+        for (const poi of pois) {
+            const mapped = this.mapPoi(poi, operators, usageTypes);
+            if (mapped) stations.push(mapped);
+        }
+
+        return stations;
+    }
+
+    private async getJson<T>(path: string): Promise<T> {
+        const response = await fetch(`${OCM_BASE}/${path}`, {
+            headers: {
+                "X-API-Key": this.apiKey,
+                "User-Agent": "EnergyEniwhere/1.0",
+            },
+        });
+
+        if (!response.ok) {
+            const body = await response.text();
+            throw new Error(`Open Charge Map ${path} failed (${response.status}): ${body.slice(0, 200)}`);
+        }
+
+        return response.json() as Promise<T>;
+    }
+
+    private mapPoi(
+        poi: OcmPoi,
+        operators: Map<number, OcmLookup>,
+        usageTypes: Map<number, OcmLookup>,
+    ): StationData | null {
+        if (SKIP_STATION_STATUS_IDS.has(poi.StatusTypeID ?? -1)) {
+            return null;
+        }
+
+        const address = poi.AddressInfo;
+        const latitude = address?.Latitude;
+        const longitude = address?.Longitude;
+        if (latitude == null || longitude == null) {
+            return null;
+        }
+
+        const connectors = this.mapConnectors(poi);
+        if (connectors.length === 0) {
+            return null;
+        }
+
+        const operator = operators.get(poi.OperatorID ?? -1);
+        const usage = usageTypes.get(poi.UsageTypeID ?? -1);
+        const isPublic = PUBLIC_USAGE_IDS.has(poi.UsageTypeID ?? 1) ||
+            (usage?.Title || "").toLowerCase().includes("public");
+
+        const addressParts = [
+            address?.AddressLine1,
+            address?.AddressLine2,
+            address?.Town,
+            address?.Postcode,
+        ].filter((part): part is string => Boolean(part && part.trim()));
+
+        const mapped: StationData = {
+            external_id: `ocm:${poi.ID}`,
+            name: (address?.Title || `OCM ${poi.ID}`).trim(),
+            operator_name: operator?.Title || "Unknown",
+            address: addressParts.join(", ") || (address?.Title || "Unknown address"),
+            latitude,
+            longitude,
+            is_public: isPublic,
+            connectors,
+        };
+
+        const website = address?.RelatedURL || operator?.WebsiteURL;
+        if (website) mapped.website = website;
+        const phone = address?.ContactTelephone1 || operator?.PhonePrimaryContact;
+        if (phone) mapped.phone = phone;
+        if (address?.AccessComments) mapped.opening_hours = address.AccessComments;
+
+        return mapped;
+    }
+
+    private mapConnectors(poi: OcmPoi): StationData["connectors"] {
+        const connectors: StationData["connectors"] = [];
+        const stationOperational = poi.StatusTypeID !== 100 && poi.StatusTypeID !== 30;
+
+        for (const connection of poi.Connections || []) {
+            const type = CONNECTION_TYPE_MAP[connection.ConnectionTypeID ?? -1];
+            if (!type) continue;
+
+            const quantity = Math.min(Math.max(connection.Quantity || 1, 1), 16);
+            const status = mapConnectorStatus(connection.StatusTypeID, stationOperational);
+            const evseBase = connection.Reference ||
+                (connection.ID != null ? `OCM-${connection.ID}` : `OCM-${poi.ID}`);
+
+            for (let i = 0; i < quantity; i++) {
+                const row: StationData["connectors"][number] = {
+                    evse_id: quantity > 1 ? `${evseBase}:${i + 1}` : evseBase,
+                    type,
+                    max_power_kw: connection.PowerKW ?? 0,
+                    status,
+                };
+                if (poi.UsageCost) row.tariff = poi.UsageCost;
+                connectors.push(row);
+            }
+        }
+
+        return connectors;
+    }
+}
+
+function mapConnectorStatus(statusTypeId: number | undefined, stationOperational: boolean): ConnectorStatus {
+    if (statusTypeId === 100 || statusTypeId === 30 || statusTypeId === 200) {
+        return ConnectorStatus.OUTOFORDER;
+    }
+    if (!stationOperational) {
+        return ConnectorStatus.OUTOFORDER;
+    }
+    // OCM occupancy (10/20) is community-based and often stale — do not treat as live.
+    return ConnectorStatus.UNKNOWN;
+}
+
+function indexById(items: OcmLookup[]): Map<number, OcmLookup> {
+    const map = new Map<number, OcmLookup>();
+    for (const item of items) {
+        const id = (item as OcmLookup & { ID?: number }).ID;
+        if (typeof id === "number") {
+            map.set(id, item);
+        }
+    }
+    return map;
 }

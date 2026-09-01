@@ -11,19 +11,22 @@ datasource db {
 }
 
 model Station {
-  id            String      @id @default(uuid())
-  name          String
-  operator_name String?
-  address       String
-  latitude      Decimal?    @db.Decimal(10, 7)
-  longitude     Decimal?    @db.Decimal(10, 7)
-  is_public     Boolean     @default(true)
-  website       String?
-  phone         String?
-  opening_hours String?
-  connectors    Connector[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id             String      @id @default(uuid())
+  external_id    String?     @unique
+  name           String
+  operator_name  String?
+  address        String
+  latitude       Decimal?    @db.Decimal(10, 7)
+  longitude      Decimal?    @db.Decimal(10, 7)
+  is_public      Boolean     @default(true)
+  website        String?
+  phone          String?
+  opening_hours  String?
+  last_synced_at DateTime?
+  connectors     Connector[]
+  checkIns       SiteCheckIn[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   @@map("station")
 }
@@ -56,4 +59,51 @@ enum ConnectorStatus {
   CHARGING
   OUTOFORDER
   UNKNOWN
+}
+
+enum SubmissionStatus {
+  PENDING
+  OWNER_CONFIRMED
+  REJECTED
+}
+
+enum CheckAnswer {
+  YES
+  NO
+  DISMISSED
+}
+
+/// User-marked station. Visible on the public map only after the app owner
+/// confirms the physical location.
+model StationSubmission {
+  id                    String           @id @default(uuid())
+  name                  String
+  address               String
+  operator_name         String?
+  latitude              Decimal          @db.Decimal(10, 7)
+  longitude             Decimal          @db.Decimal(10, 7)
+  connector_note        String?
+  submitted_by          String
+  status                SubmissionStatus @default(PENDING)
+  owner_note            String?
+  published_station_id  String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  @@map("station_submission")
+}
+
+/// On-site report when a driver arrives: working? free connectors?
+model SiteCheckIn {
+  id              String      @id @default(uuid())
+  station_id      String
+  station         Station     @relation(fields: [station_id], references: [id], onDelete: Cascade)
+  reporter_id     String
+  working         CheckAnswer
+  free_connectors CheckAnswer
+  latitude        Decimal?    @db.Decimal(10, 7)
+  longitude       Decimal?    @db.Decimal(10, 7)
+  createdAt       DateTime    @default(now())
+
+  @@map("site_check_in")
 }

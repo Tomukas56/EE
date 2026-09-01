@@ -38,14 +38,18 @@ class StationCard extends StatelessWidget {
                   station.operatorName!,
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                  ).textTheme.bodySmall,
                 ),
               const SizedBox(height: 8),
 
               // Address
               Row(
                 children: [
-                  Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                  Icon(
+                    Icons.location_on,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(

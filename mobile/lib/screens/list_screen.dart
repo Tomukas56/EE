@@ -18,7 +18,7 @@ class ListScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.map),
-            onPressed: () => context.goNamed('map'),
+            onPressed: () => context.pushNamed('map'),
             tooltip: 'Map View',
           ),
         ],
@@ -43,8 +43,6 @@ class ListScreen extends ConsumerWidget {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                filled: true,
-                fillColor: Colors.grey[100],
               ),
               onChanged: (value) {
                 ref.read(searchQueryProvider.notifier).state = value;
@@ -66,7 +64,7 @@ class ListScreen extends ConsumerWidget {
                               ? Icons.search_off
                               : Icons.ev_station_outlined,
                           size: 64,
-                          color: Colors.grey,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                         const SizedBox(height: 16),
                         Text(

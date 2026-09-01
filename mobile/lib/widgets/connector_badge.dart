@@ -74,7 +74,7 @@ class ConnectorBadge extends StatelessWidget {
                   connector.evseId,
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                  ).textTheme.bodySmall,
                 ),
 
                 // Tariff
@@ -83,7 +83,6 @@ class ConnectorBadge extends StatelessWidget {
                   Text(
                     connector.tariff!,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[800],
                       fontWeight: FontWeight.w500,
                     ),
                   ),

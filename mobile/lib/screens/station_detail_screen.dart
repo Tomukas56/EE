@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../models/station.dart';
+import '../providers/auth_provider.dart';
 import '../providers/stations_provider.dart';
+import '../widgets/arrival_check_sheet.dart';
 import '../widgets/connector_badge.dart';
 
 class StationDetailScreen extends ConsumerWidget {
@@ -26,6 +29,38 @@ class StationDetailScreen extends ConsumerWidget {
     final url = Uri.parse('tel:$phone');
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
+    }
+  }
+
+  Future<void> _reportArrival(
+    BuildContext context,
+    WidgetRef ref,
+    StationDetail station,
+  ) async {
+    final result = await showArrivalCheckSheet(
+      context,
+      stationName: station.name,
+    );
+    if (result == null || !context.mounted) return;
+    final user = ref.read(sessionProvider);
+    try {
+      await ref.read(apiServiceProvider).sendCheckIn(
+            stationId: station.id,
+            working: result.workingApi,
+            freeConnectors: result.freeConnectorsApi,
+            reporterId: user?.id ?? user?.email,
+            latitude: station.latitude,
+            longitude: station.longitude,
+          );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Thanks. Report saved.')),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not save report: $error')),
+      );
     }
   }
 
@@ -156,6 +191,15 @@ class StationDetailScreen extends ConsumerWidget {
                         ...station.connectors.map(
                           (connector) => ConnectorBadge(connector: connector),
                         ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _reportArrival(context, ref, station),
+                          icon: const Icon(Icons.flag_circle),
+                          label: const Text("I've arrived — confirm status"),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -223,7 +267,7 @@ class _InfoRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 24, color: Colors.grey[600]),
+            Icon(icon, size: 24, color: Theme.of(context).colorScheme.onSurface),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -231,7 +275,10 @@ class _InfoRow extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -245,7 +292,11 @@ class _InfoRow extends StatelessWidget {
               ),
             ),
             if (onTap != null)
-              Icon(Icons.open_in_new, size: 20, color: Colors.grey[600]),
+              Icon(
+                Icons.open_in_new,
+                size: 20,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
           ],
         ),
       ),

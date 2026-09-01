@@ -131,7 +131,7 @@ Real-time session data (kWh delivered, time elapsed, current cost).
 
 ### 3.6 Payments
 #### 3.6.1 Description
-Secure in-app payment processing for charging sessions.
+Secure in-app payment processing for charging sessions via the device wallet (Apple Pay / Google Pay) and Stripe. See docs/PRD.md §7.
 #### 3.6.2 Inputs
 Payment method (Credit Card, Apple Pay, Google Pay), Billing details.
 #### 3.6.3 Processing
@@ -139,29 +139,21 @@ Authorize payment, process transaction upon session completion, generate invoice
 #### 3.6.4 Outputs
 Payment confirmation, Transaction history, Invoices.
 
+### 3.7 Mark a new station
+A signed-in driver may submit a pin + metadata. The station is unpublished until the app owner confirms the physical location, then it appears on the map.
+
+### 3.8 Arrival check
+On arrival the app asks whether the station is working and whether connectors are free. Answers: Yes, No, Dismiss.
+
 ## 4. Non-Functional Requirements
 ### 4.1 Performance Requirements
 -   Map loading time should be under 2 seconds.
 -   Real-time status updates should be reflected within 30 seconds of change.
 
 ### 4.2 Security Requirements
-### 4.2 Security Requirements
--   **Data Protection (GDPR/BDAR)**:
-    -   Strict compliance with General Data Protection Regulation (EU) 2016/679.
-    -   Implementation of "Right to be Forgotten" and data portability.
-    -   User consent management for data processing.
--   **Payment Security (PSD2 & PCI DSS)**:
-    -   Compliance with Payment Services Directive 2 (EU) 2015/2366, specifically Strong Customer Authentication (SCA).
-    -   Adherence to PCI DSS (Payment Card Industry Data Security Standard) guidelines (using compliant payment gateways).
--   **Application Security**:
-    -   Adherence to **OWASP Mobile Top 10** security risks.
-    -   Secure storage of sensitive data (Keychain/Keystore).
-    -   Certificate pinning for API communication to prevent Man-in-the-Middle (MitM) attacks.
--   **Authentication**:
-    -   Implementation of OAuth 2.0 / OpenID Connect standards.
--   **Encrypted Communication**:
-    -   TLS 1.3 for all data in transit.
-    -   AES-256 encryption for sensitive data at rest.
+The binding list of standards, the gap assessment, Wallet requirements, and crowd-station rules live in **[docs/PRD.md](../PRD.md) §§5–8**.
+
+Summary: GDPR/BDAR, ePrivacy, consumer law, PSD2 SCA, PCI DSS SAQ A via Stripe, OWASP MASVS/ASVS, TLS 1.3 in production, OAuth/OIDC, store policies, Google Maps / Firebase / OCM / Stripe terms, OCPI when CPO links exist. ISO 27001 and NIS2 are later. Current lab build is **not** production-compliant — see the gap table in docs/PRD.md §6.
 
 ### 4.3 Reliability and Availability
 -   99.9% uptime for the application backend.

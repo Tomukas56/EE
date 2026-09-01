@@ -18,21 +18,41 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Energy Eniwhere — charge anywhere, anytime">
+  <meta name="viewport" content="width=390, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="mobile">
+  <meta name="apple-mobile-web-app-title" content="Energy Eniwhere">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>mobile</title>
+  <title>Energy Eniwhere</title>
   <link rel="manifest" href="manifest.json">
+  <!-- Web Google Sign-In needs a Firebase Web OAuth client ID here. -->
+  <!-- <meta name="google-signin-client_id" content="xxxxx.apps.googleusercontent.com"> -->
+  <script src="google_maps_key.js"></script>
+  <script>
+    if (window.GOOGLE_MAPS_API_KEY) {
+      document.write(
+        '<script src="https://maps.googleapis.com/maps/api/js?key=' +
+          encodeURIComponent(window.GOOGLE_MAPS_API_KEY) +
+          '"><\/script>'
+      );
+    }
+  </script>
 </head>
 <body>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #0e0e10;
+    }
+  </style>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

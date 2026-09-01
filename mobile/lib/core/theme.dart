@@ -20,9 +20,19 @@ class AppColors {
   static const Color backgroundDark = Color(0xFF1C1C1E);
   static const Color cardLight = Color(0xFFFFFFFF);
   static const Color cardDark = Color(0xFF2C2C2E);
-  static const Color textPrimary = Color(0xFF000000);
-  static const Color textSecondary = Color(0xFF8E8E93);
+  static const Color textPrimary = Color(0xFF111111);
+  static const Color textSecondary = Color(0xFF3A3A3C);
+  /// Use on dark surfaces only — never black or mid-gray.
+  static const Color textOnDark = Color(0xFFF5F5F7);
+  static const Color textOnDarkSecondary = Color(0xFFD1D1D6);
   static const Color divider = Color(0xFFE5E5EA);
+
+  /// Secondary labels: never black/dark-gray on a dark surface.
+  static Color secondaryLabel(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? textOnDarkSecondary
+        : textSecondary;
+  }
 
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
@@ -108,14 +118,17 @@ class AppTheme {
 
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: AppColors.primaryBlue,
+    brightness: Brightness.dark,
+    colorScheme: const ColorScheme.dark(
       primary: AppColors.primaryTeal,
       secondary: AppColors.accentPurple,
-      surface: AppColors.backgroundDark,
-      background: AppColors.backgroundDark,
+      tertiary: AppColors.primaryBlue,
+      surface: AppColors.cardDark,
       error: AppColors.errorRed,
-      brightness: Brightness.dark,
+      onPrimary: Color(0xFF111111),
+      onSecondary: AppColors.textOnDark,
+      onSurface: AppColors.textOnDark,
+      onError: AppColors.textOnDark,
     ),
     scaffoldBackgroundColor: AppColors.backgroundDark,
     cardTheme: CardThemeData(
@@ -123,6 +136,68 @@ class AppTheme {
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    ),
+    appBarTheme: const AppBarTheme(
+      elevation: 0,
+      centerTitle: false,
+      backgroundColor: AppColors.backgroundDark,
+      foregroundColor: AppColors.textOnDark,
+      titleTextStyle: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        color: AppColors.textOnDark,
+      ),
+      iconTheme: IconThemeData(color: AppColors.textOnDark),
+    ),
+    textTheme: const TextTheme(
+      bodyLarge: TextStyle(color: AppColors.textOnDark),
+      bodyMedium: TextStyle(color: AppColors.textOnDark),
+      bodySmall: TextStyle(color: AppColors.textOnDarkSecondary),
+      titleLarge: TextStyle(color: AppColors.textOnDark),
+      titleMedium: TextStyle(color: AppColors.textOnDark),
+      titleSmall: TextStyle(color: AppColors.textOnDark),
+      headlineSmall: TextStyle(color: AppColors.textOnDark),
+      labelLarge: TextStyle(color: AppColors.textOnDark),
+    ),
+    iconTheme: const IconThemeData(color: AppColors.textOnDark),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        elevation: 0,
+        foregroundColor: const Color(0xFF111111),
+        backgroundColor: AppColors.primaryTeal,
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.textOnDark,
+        side: const BorderSide(color: AppColors.textOnDarkSecondary),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppColors.cardDark,
+      hintStyle: const TextStyle(color: AppColors.textOnDarkSecondary),
+      labelStyle: const TextStyle(color: AppColors.textOnDark),
+      prefixIconColor: AppColors.textOnDark,
+      suffixIconColor: AppColors.textOnDark,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF636366)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primaryTeal, width: 2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    ),
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      foregroundColor: Color(0xFF111111),
     ),
   );
 }

@@ -75,7 +75,7 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
           // Map Result (Placeholder for Web Demo)
           Expanded(
             child: Container(
-              color: Colors.grey[200],
+              color: Theme.of(context).colorScheme.surface,
               width: double.infinity,
               child: Stack(
                 alignment: Alignment.center,
@@ -87,12 +87,15 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                         Icon(
                           Icons.map_outlined,
                           size: 80,
-                          color: Colors.grey[400],
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                         const SizedBox(height: 16),
-                        const Text(
+                        Text(
                           'Enter locations to see route',
-                          style: TextStyle(color: Colors.grey, fontSize: 16),
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 16,
+                          ),
                         ),
                       ],
                     ),
@@ -103,12 +106,14 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                       size: const Size(300, 300),
                       painter: _RoutePainter(),
                     ),
-                    const Positioned(
+                    Positioned(
                       bottom: 20,
                       child: Text(
                         'Map Visualization Only (No API Key)',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                     ),
                   ],

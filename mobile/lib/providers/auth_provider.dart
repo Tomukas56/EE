@@ -1,20 +1,28 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/app_user.dart';
 import '../services/auth_service.dart';
 
-// Auth Service Provider
-final authServiceProvider = Provider<AuthService>((ref) {
-  return AuthService();
+final authServiceProvider = Provider<AuthService>((ref) => AuthService());
+
+final sessionProvider = StateNotifierProvider<SessionNotifier, AppUser?>((ref) {
+  throw StateError('sessionProvider must be overridden in main()');
 });
 
-// Auth State Provider
-final authStateProvider = StreamProvider<User?>((ref) {
-  // Mock auth for Web Demo - return null (logged out) or implement mock user if needed
-  return Stream.value(null);
-});
+class SessionNotifier extends StateNotifier<AppUser?> {
+  SessionNotifier(this._auth, AppUser? initial) : super(initial);
 
-// Current User Provider
-final currentUserProvider = Provider<User?>((ref) {
-  final authService = ref.watch(authServiceProvider);
-  return authService.currentUser;
-});
+  final AuthService _auth;
+
+  bool get isLoggedIn => state != null;
+
+  Future<AppUser> signInWithGoogle() async {
+    final user = await _auth.signInWithGoogle();
+    state = user;
+    return user;
+  }
+
+  Future<void> signOut() async {
+    await _auth.signOut();
+    state = null;
+  }
+}

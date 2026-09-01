@@ -1,60 +1,140 @@
+import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/app_user.dart';
+
+class AuthException implements Exception {
+  AuthException(this.message);
+  final String message;
+
+  @override
+  String toString() => message;
+}
 
 class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  static const _sessionKey = 'ee.session.user';
+  static const agreementKey = 'ee.agreement.accepted';
 
-  // Current user stream
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
 
-  // Current user
-  User? get currentUser => _auth.currentUser;
+  static Future<bool> readAgreementAccepted() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(agreementKey) ?? false;
+  }
 
-  // Sign in with Google
-  Future<User?> signInWithGoogle() async {
+  Future<void> persistAgreementAccepted(bool accepted) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(agreementKey, accepted);
+  }
+
+  static Future<void> ensureFirebase() async {
+    if (kIsWeb) return;
+    if (Firebase.apps.isNotEmpty) return;
     try {
-      // Trigger the authentication flow
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      await Firebase.initializeApp();
+    } catch (error) {
+      debugPrint('Firebase init skipped: $error');
+    }
+  }
 
-      if (googleUser == null) {
-        // User canceled the sign-in
-        return null;
-      }
-
-      // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      // Create a new credential
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Sign in to Firebase with the Google credential
-      final UserCredential userCredential = await _auth.signInWithCredential(
-        credential,
-      );
-
-      return userCredential.user;
-    } catch (e) {
-      print('Error signing in with Google: $e');
+  static Future<AppUser?> readSavedUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_sessionKey);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      return AppUser.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
       return null;
     }
   }
 
-  // Sign out
-  Future<void> signOut() async {
-    await Future.wait([_auth.signOut(), _googleSignIn.signOut()]);
+  Future<void> _persist(AppUser? user) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (user == null) {
+      await prefs.remove(_sessionKey);
+    } else {
+      await prefs.setString(_sessionKey, jsonEncode(user.toJson()));
+    }
   }
 
-  // Delete account
-  Future<void> deleteAccount() async {
-    final user = _auth.currentUser;
-    if (user != null) {
-      await user.delete();
-      await _googleSignIn.signOut();
+  static const debugSha1 =
+      '57:0C:80:58:9D:2E:A8:6D:0E:1B:20:2A:5A:3F:6F:38:47:D0:95:33';
+
+  static bool _isDeveloperError(Object error) {
+    final text = error.toString();
+    return text.contains('ApiException: 10') ||
+        text.contains('ApiException:10') ||
+        (error is PlatformException &&
+            (error.code == 'sign_in_failed' &&
+                (error.message?.contains('10') ?? false)));
+  }
+
+  static AuthException _developerError() {
+    return AuthException(
+      'Google ApiException 10: Firebase still has no Android OAuth client '
+      'for package com.eniwhere.energy. Add SHA-1 $debugSha1, enable '
+      'Authentication → Google, then replace android/app/google-services.json '
+      'with the newly downloaded file.',
+    );
+  }
+
+  Future<AppUser> signInWithGoogle() async {
+    try {
+      final started = DateTime.now();
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        final elapsedMs = DateTime.now().difference(started).inMilliseconds;
+        if (elapsedMs < 4000) {
+          throw _developerError();
+        }
+        throw AuthException('Sign-in cancelled');
+      }
+
+      if (!kIsWeb && Firebase.apps.isNotEmpty) {
+        try {
+          final googleAuth = await googleUser.authentication;
+          final credential = GoogleAuthProvider.credential(
+            accessToken: googleAuth.accessToken,
+            idToken: googleAuth.idToken,
+          );
+          await FirebaseAuth.instance.signInWithCredential(credential);
+        } catch (error) {
+          debugPrint('Firebase credential exchange skipped: $error');
+        }
+      }
+
+      final user = AppUser(
+        id: googleUser.id,
+        email: googleUser.email,
+        displayName: googleUser.displayName,
+        photoUrl: googleUser.photoUrl,
+      );
+      await _persist(user);
+      return user;
+    } on AuthException {
+      rethrow;
+    } catch (error) {
+      if (_isDeveloperError(error)) {
+        throw _developerError();
+      }
+      throw AuthException('Google Sign-In failed: $error');
     }
+  }
+
+  Future<void> signOut() async {
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
+    if (!kIsWeb && Firebase.apps.isNotEmpty) {
+      try {
+        await FirebaseAuth.instance.signOut();
+      } catch (_) {}
+    }
+    await _persist(null);
   }
 }

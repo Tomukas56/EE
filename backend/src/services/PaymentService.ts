@@ -1,8 +1,14 @@
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-    apiVersion: '2025-11-17.clover',
-});
+function getStripe(): Stripe {
+    const apiKey = process.env.STRIPE_SECRET_KEY;
+    if (!apiKey) {
+        throw new Error('STRIPE_SECRET_KEY is not configured');
+    }
+    return new Stripe(apiKey, {
+        apiVersion: '2025-11-17.clover',
+    });
+}
 
 export class PaymentService {
     async createPaymentIntent(amount: number, currency: string = 'eur', customerId?: string) {
@@ -14,7 +20,7 @@ export class PaymentService {
             };
             if (customerId) params.customer = customerId;
 
-            const paymentIntent = await stripe.paymentIntents.create(params);
+            const paymentIntent = await getStripe().paymentIntents.create(params);
             return {
                 clientSecret: paymentIntent.client_secret,
                 paymentIntentId: paymentIntent.id,
@@ -29,7 +35,7 @@ export class PaymentService {
         try {
             const params: Stripe.CustomerCreateParams = { email };
             if (name) params.name = name;
-            return await stripe.customers.create(params);
+            return await getStripe().customers.create(params);
         } catch (error) {
             console.error('Error creating customer:', error);
             throw error;
@@ -38,7 +44,7 @@ export class PaymentService {
 
     async getCustomerByEmail(email: string) {
         try {
-            const customers = await stripe.customers.list({ email, limit: 1 });
+            const customers = await getStripe().customers.list({ email, limit: 1 });
             return customers.data[0] || null;
         } catch (error) {
             console.error('Error getting customer:', error);
@@ -48,6 +54,7 @@ export class PaymentService {
 
     async attachPaymentMethod(paymentMethodId: string, customerId: string) {
         try {
+            const stripe = getStripe();
             const paymentMethod = await stripe.paymentMethods.attach(paymentMethodId, { customer: customerId });
             await stripe.customers.update(customerId, {
                 invoice_settings: { default_payment_method: paymentMethodId },
@@ -61,7 +68,7 @@ export class PaymentService {
 
     async listPaymentMethods(customerId: string) {
         try {
-            const paymentMethods = await stripe.paymentMethods.list({ customer: customerId, type: 'card' });
+            const paymentMethods = await getStripe().paymentMethods.list({ customer: customerId, type: 'card' });
             return paymentMethods.data;
         } catch (error) {
             console.error('Error listing payment methods:', error);
@@ -71,7 +78,7 @@ export class PaymentService {
 
     async chargeSession(customerId: string, amount: number, description: string) {
         try {
-            return await stripe.paymentIntents.create({
+            return await getStripe().paymentIntents.create({
                 amount: Math.round(amount * 100),
                 currency: 'eur',
                 customer: customerId,
