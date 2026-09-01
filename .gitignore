@@ -23,3 +23,9 @@ node_modules/
 
 # OS specific
 .DS_Store
+
+# Accidental nested Windows OneDrive copy of this repo
+/OneDrive - teltonika.lt/
+
+# Local Gradle/Flutter logs (often contain host paths)
+signing_output.txt
