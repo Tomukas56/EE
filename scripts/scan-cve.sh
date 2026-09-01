@@ -10,8 +10,21 @@ mkdir -p "$OUT"
 
 export PATH="$HOME/.local/bin:$PATH"
 
+snyk_whoami() {
+  # Ignore a stale SNYK_TOKEN in the environment — `snyk auth` OAuth is preferred.
+  env -u SNYK_TOKEN snyk whoami 2>/dev/null | head -n 1 | tr -d '\r'
+}
+
 load_snyk_token() {
+  local who
+  who="$(snyk_whoami || true)"
+  if [[ -n "$who" && "$who" != *"ERROR"* && "$who" != *"Authentication"* ]]; then
+    unset SNYK_TOKEN
+    echo "Snyk CLI login: $who (OAuth; SNYK_TOKEN not applied)"
+    return 0
+  fi
   if [[ -n "${SNYK_TOKEN:-}" ]]; then
+    echo "Using SNYK_TOKEN from the environment"
     return 0
   fi
   local f val
@@ -20,6 +33,7 @@ load_snyk_token() {
     val="$(grep -E '^[[:space:]]*SNYK_TOKEN=' "$f" 2>/dev/null | tail -n 1 | sed 's/^[[:space:]]*SNYK_TOKEN=//' | sed 's/^["'\'']//;s/["'\'']$//' || true)"
     if [[ -n "$val" ]]; then
       export SNYK_TOKEN="$val"
+      echo "Using SNYK_TOKEN from $(basename "$(dirname "$f")")/$(basename "$f")"
       return 0
     fi
   done

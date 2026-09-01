@@ -49,7 +49,8 @@ CRA due diligence also covers remote processing and runtimes. These are **not** 
 
 ```bash
 ./scripts/install-snyk.sh          # once per machine (Intel Mac → ~/.local/bin/snyk)
-# Token: https://app.snyk.io/account → SNYK_TOKEN in backend/.env (gitignored)
+snyk auth                          # browser login (preferred)
+# Optional CI: SNYK_TOKEN in backend/.env only if `snyk whoami` works with that token
 ./scripts/scan-cve.sh              # fails on Snyk high/critical, OSV, or npm high/critical
 ```
 
