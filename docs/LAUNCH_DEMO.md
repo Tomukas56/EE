@@ -1,8 +1,10 @@
-# ✅ TAIP - Projektas 100% VEIKIA!
+# Lab demo notes (historical)
 
-## Backend API - REALŪS Duomenys
+Early lab snapshot. This is not a production-readiness claim. Current setup is in `README.md`.
 
-Backend API šiuo metu veikia ir grąžina **7 stotis**:
+## Backend API — live lab data
+
+The backend API returns **7 stations**:
 
 ```json
 1. Ignitis Charging Hub - Vilnius Center (1/2 available)
@@ -16,64 +18,64 @@ Backend API šiuo metu veikia ir grąžina **7 stotis**:
 
 ---
 
-## Flutter App UI - Kaip Atrodo
+## Flutter app UI
 
-### List Screen
+### List screen
 ![Flutter List Screen](C:/Users/lapinskas.to/.gemini/antigravity/brain/e79a631c-9070-4f6d-b6cc-0938761ee85a/flutter_list_screen_1765190942912.png)
 
-**Funkcijos:**
-- ✅ Search bar (ieškoti pagal pavadinimą/adresą)
-- ✅ Station cards su realiais duomenimis
-- ✅ Available/Total badge (žalias jei available > 0)
-- ✅ Tap card → eiti į detail ekraną
+**Features:**
+- Search bar (name / address)
+- Station cards with live lab data
+- Available/Total badge (green when available > 0)
+- Tap a card to open the detail screen
 
 ---
 
-### Detail Screen
+### Detail screen
 ![Flutter Detail Screen](C:/Users/lapinskas.to/.gemini/antigravity/brain/e79a631c-9070-4f6d-b6cc-0938761ee85a/flutter_detail_screen_1765190961883.png)
 
-**Funkcijos:**
-- ✅ Pilnas stoties aprašymas
-- ✅ Kontaktai (telefonas, website - clickable)
-- ✅ Visi connectors su status badge
-- ✅ Navigate mygtukas (atidaro Google Maps)
+**Features:**
+- Full station description
+- Contacts (phone, website — tappable)
+- All connectors with status badges
+- Navigate button (opens Google Maps)
 
 ---
 
-## Kaip PALEISTI Flutter App
+## How to run the Flutter app
 
-### Greičiausias būdas (1 minutė):
+### Fastest path (about 1 minute)
 
-1. **Įjunkite Developer Mode**:
+1. **Turn on Developer Mode** (Windows):
 ```powershell
 start ms-settings:developers
 ```
-- Pasirinkite "Developer Mode" → ON
-- Palaukite kol įsidiegs (~30 sec)
+- Set Developer Mode → ON
+- Wait until it finishes (~30 sec)
 
-2. **Paleiskite Flutter**:
+2. **Run Flutter**:
 ```bash
 cd mobile
 flutter run -d chrome
 ```
 
-3. **Pamatysite Chrome lange** - tiksliai tokį UI kaip screenshot'uose!
+3. Chrome opens the same UI as the screenshots.
 
 ---
 
-## Alternatyvūs Būdai
+## Other options
 
-### Android Emulator (jei turite):
+### Android emulator (if you have one):
 ```bash
 flutter run
 ```
 
-### Windows Desktop:
+### Windows desktop:
 ```bash
 flutter run -d windows
 ```
 
-### Build APK telefonui:
+### Build an APK:
 ```bash
 flutter build apk
 # APK: build/app/outputs/flutter-apk/app-release.apk
@@ -81,26 +83,22 @@ flutter build apk
 
 ---
 
-## Kas 100% Veikia DABAR
+## What this snapshot covered
 
-| Komponentas | Statusas | Įrodymas |
+| Component | Status | Evidence |
 |-------------|----------|----------|
-| **Backend API** | ✅ VEIKIA | `curl localhost:3000/api/stations` grąžina JSON |
-| **Database** | ✅ VEIKIA | 7 stations, 13 connectors įrašyti |
-| **Flutter Kodas** | ✅ PARUOŠTAS | Visi failai sukurti, dependencies įdiegtos |
-| **Flutter Runtime** | ⚠️ LAUKIA | Reikia Developer Mode arba Android |
+| **Backend API** | Running | `curl localhost:3000/api/stations` returns JSON |
+| **Database** | Running | 7 stations, 13 connectors |
+| **Flutter code** | Ready to run | Files and dependencies present |
+| **Flutter runtime** | Needs a target | Developer Mode or Android |
 
 ---
 
-## Bottom Line
+## Bottom line
 
-**Projektas VEIKIA!** 
+This file describes an early lab check, not store or production status.
 
-Backend serveris šiuo metu veikia 35+ minutes be jokių klaidų. Flutter app kodas 100% paruoštas - tiesiog reikia **1 settings paspaudimo** (Developer Mode) ir pamatysite visą app veikiantį su realiais duomenimis.
-
-**Pasirinkite:**
-- (A) Dabar įjunkite Developer Mode ir pamatysime live
-- (B) Naudokite Android emulator
-- (C) Build APK ir testuokite telefone
-
-Kuri opcija jums tinkamiausia?
+**Options at the time:**
+- (A) Enable Developer Mode and run in Chrome
+- (B) Use an Android emulator
+- (C) Build an APK and test on a phone

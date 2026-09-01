@@ -43,4 +43,4 @@ Lab sessions/history/filters/vehicle/trip are usable on the tablet. Store, PCI, 
 Docs that say “85% / production-ready” overstate production readiness.
 
 ## Left to build
-See `docs/specs/PROBLEMS.txt` items 2, 5, 7–22, 24–25.
+Tracked locally in `docs/specs/PROBLEMS.txt` (gitignored, not on GitHub).

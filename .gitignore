@@ -33,3 +33,6 @@ backend/.env
 
 # Local Gradle/Flutter logs (often contain host paths)
 signing_output.txt
+
+# Remaining-work list (Lithuanian, local only — not published)
+docs/specs/PROBLEMS.txt

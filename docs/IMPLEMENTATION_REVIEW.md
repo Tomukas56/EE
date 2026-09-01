@@ -1,40 +1,42 @@
-# Energy Eniwhere - Įgyvendinimo Apžvalga
+# Energy Eniwhere — implementation review
 
-## ✅ Užbaigti Veiksmai
+Historical lab notes from the first backend slice. Current lab status is in `README.md` and `docs/specs/SECURITY_COMPLIANCE.md`.
 
-### 1. Projekto Inicializacija
-- ✅ Sukurta projekto struktūra
-- ✅ Sukurtas PRD dokumentas
-- ✅ Sukurtas DFD (Data Flow Diagram)
-- ✅ Inicializuotas Git repository (https://github.com/Tomukas56/EE)
-- ✅ Sukonfigūruota development aplinka
+## Completed at the time
 
-### 2. Backend Vystymas
+### 1. Project setup
+- Project structure
+- PRD
+- DFD (Data Flow Diagram)
+- Git repository (https://github.com/Tomukas56/EE)
+- Development environment
 
-#### 2.1 Database Setup
-- ✅ PostgreSQL 16 su Docker Compose
-- ✅ Prisma ORM 5.22 (vietoj TypeORM)
-- ✅ Database schema su Station ir Connector modeliais
-- ✅ Migracijos sukurtos ir paleistos
+### 2. Backend
 
-#### 2.2 Core Services
-- ✅ **CPOService**: Mock duomenų šaltinis su 7 Lietuvos stotimis
-- ✅ **SyncWorker**: Cron darbas kas dieną 2 AM (200h sinchronizacijai)
-- ✅ **Prisma Client**: Type-safe database queries
+#### 2.1 Database
+- PostgreSQL 16 with Docker Compose
+- Prisma ORM 5.22 (instead of TypeORM)
+- Station and Connector models
+- Migrations created and applied
 
-#### 2.3 API Endpoints
-- ✅ `GET /` - Health check
-- ✅ `GET /api/stations` - Visų stočių sąrašas
-- ✅ `GET /api/stations/:id` - Detalus stoties aprašymas
+#### 2.2 Core services
+- **CPOService**: mock data source with 7 Lithuanian stations
+- **SyncWorker**: daily cron at 02:00 (200h sync window)
+- **Prisma Client**: type-safe queries
+
+#### 2.3 API endpoints
+- `GET /` — health check
+- `GET /api/stations` — station list
+- `GET /api/stations/:id` — station detail
 
 #### 2.4 Security
-- ✅ Helmet.js HTTP security headers
-- ✅ CORS enabled
-- ✅ Environment variables (.env)
-- ✅ Non-default database passwords
+- Helmet.js HTTP security headers
+- CORS enabled
+- Environment variables (`.env`)
+- Non-default database passwords
 
-### 3. Mock Duomenys
-**7 stotys įkeltos:**
+### 3. Mock data
+**7 stations loaded:**
 1. Ignitis Charging Hub - Vilnius Center (CCS 150kW, Type2 22kW)
 2. Elinta Fast Charge - Kaunas (CCS 50kW, CHAdeMO 50kW)
 3. Maxima Shopping Center - Vilnius Ozas (Type2 22kW x2)
@@ -43,46 +45,46 @@
 6. Elinta Downtown - Kaunas Laisvės (Type2 11kW)
 7. LIDL Parking - Vilnius Ukmergė (Type2 22kW - OUTOFORDER)
 
-**Iš viso:** 13 įkrovimo jungtys
+**Total:** 13 charging connectors
 
-### 4. Dokumentacija
-- ✅ `README.md` - Pilnas setup vadovas
-- ✅ `docs/memory-bank.md` - Pakeitimų istorija
-- ✅ `docs/specs/PRD.md` - Atnaujintas su implementacijos statusu
-- ✅ `.gemini/walkthrough.md` - Detalus walkthrough
-
----
-
-## 🔄 Nukrypimai nuo Pradinio Plano
-
-### 1. TypeORM → Prisma ORM Migration
-**Kodėl**: TypeORM turėjo persistuojančias initialization klaidas  
-**Poveikis**: Geresnis TypeScript integration, paprastesnė konfigūracija  
-**Laikas**: ~2 valandos troubleshooting + 30min migration
-
-### 2. PostGIS → Simple Lat/Lng
-**Kodėl**: PostGIS geometry type sukėlė TypeORM errors  
-**Poveikis**: Supaprastinta schema, spatial indexing galima pridėti vėliau  
-**Trade-off**: Reikės rankinių distance kalkuliacijų filtrams
-
-### 3. Database Port: 5432 → 5433
-**Kodėl**: Konfliktas su lokaliu PostgreSQL  
-**Poveikis**: Team naudoja DATABASE_URL su :5433 port
+### 4. Documentation
+- `README.md` — setup guide
+- `docs/memory-bank.md` — change history
+- `docs/specs/PRD.md` — updated with implementation status
+- `.gemini/walkthrough.md` — detailed walkthrough
 
 ---
 
-## 📊 Projekto Statistika
+## Deviations from the original plan
 
-- **Kodo eilutės**: ~1,500 (TypeScript)
-- **Failai**: 15+ backend files
-- **Database tables**: 2 (station, connector)
-- **API endpoints**: 3
-- **Development time**: ~4 valandos
-- **Git commits**: 3
+### 1. TypeORM → Prisma ORM
+**Why:** TypeORM had persistent initialization errors  
+**Effect:** Better TypeScript integration, simpler configuration  
+**Time:** ~2 hours troubleshooting + 30 min migration
+
+### 2. PostGIS → simple lat/lng
+**Why:** PostGIS geometry types caused TypeORM errors  
+**Effect:** Simpler schema; spatial indexing can be added later  
+**Trade-off:** Distance filters need manual calculations
+
+### 3. Database port: 5432 → 5433
+**Why:** Conflict with a local PostgreSQL  
+**Effect:** Team uses `DATABASE_URL` with port 5433
 
 ---
 
-## 🚀 Kaip Paleisti
+## Project stats (at the time)
+
+- **Lines of code:** ~1,500 (TypeScript)
+- **Files:** 15+ backend files
+- **Database tables:** 2 (`station`, `connector`)
+- **API endpoints:** 3
+- **Development time:** ~4 hours
+- **Git commits:** 3
+
+---
+
+## How to run
 
 ```bash
 # 1. Clone repository
@@ -108,22 +110,22 @@ Server: `http://localhost:3000`
 
 ---
 
-## 🧪 Testavimo Rezultatai
+## Test results (at the time)
 
-### API Tests
+### API
 ```bash
 ✓ GET / → "Energy Eniwhere API is running"
 ✓ GET /api/stations → Returns 7 stations (JSON)
 ✓ GET /api/stations/:id → Returns station details with connectors
 ```
 
-### Database Verification
+### Database
 ```sql
 ✓ SELECT COUNT(*) FROM station;   -- 7
 ✓ SELECT COUNT(*) FROM connector; -- 13
 ```
 
-### Server Logs
+### Server logs
 ```
 ✓ Database connected
 ✓ [SyncWorker] Successfully synced 7 stations
@@ -132,24 +134,24 @@ Server: `http://localhost:3000`
 
 ---
 
-## 📋 Sekantys Žingsniai
+## Next steps (original list)
 
-### Backend Improvements (Optional)
-- [ ] Add geospatial filtering (ST_DWithin with PostGIS)
-- [ ] Implement Redis caching
-- [ ] Add rate limiting
-- [ ] Create API documentation (Swagger/OpenAPI)
+### Backend (optional)
+- [ ] Geospatial filtering (ST_DWithin with PostGIS)
+- [ ] Redis caching
+- [ ] Rate limiting
+- [ ] API documentation (Swagger/OpenAPI)
 
-### Mobile App (Priority)
+### Mobile (priority at the time)
 - [ ] Initialize Flutter project
-- [ ] Setup Google Maps / Mapbox
-- [ ] Create Station List screen
-- [ ] Create Station Detail screen
-- [ ] Integrate with backend API
-- [ ] Add filters (connector type, power, distance)
+- [ ] Google Maps / Mapbox
+- [ ] Station list screen
+- [ ] Station detail screen
+- [ ] Backend API integration
+- [ ] Filters (connector type, power, distance)
 
-### Advanced Features
-- [ ] Real CPO integrations (OCPI protocol)
+### Later features
+- [ ] Real CPO integrations (OCPI)
 - [ ] User authentication (JWT)
 - [ ] Charging session control
 - [ ] Payment processing (Stripe)
@@ -157,31 +159,29 @@ Server: `http://localhost:3000`
 
 ---
 
-## 🎯 Pasiūlymai Peržiūrai
+## Review questions (original)
 
-### Technologijų Pasirinkimai
-1. **Prisma ORM**: Ar pritariate migrationui nuo TypeORM?
-2. **Simple Lat/Lng**: Ar reikia grąžinti PostGIS dabar ar vėliau?
-3. **Mock Data**: Ar pakankamas duomenų kiekis testavimui?
+### Technology choices
+1. **Prisma ORM:** Approve the move off TypeORM?
+2. **Simple lat/lng:** Bring PostGIS back now or later?
+3. **Mock data:** Enough stations for testing?
 
 ### Architecture
-1. **API Structure**: Ar endpoint'ai atitinka lūkesčius?
-2. **Database Schema**: Ar reikia papildomų stulpelių?
-3. **Sync Frequency**: Ar 24h sync tinkamas intervalas?
+1. **API structure:** Do the endpoints match expectations?
+2. **Database schema:** Extra columns needed?
+3. **Sync frequency:** Is 24h a reasonable interval?
 
-### Prioritetai
-1. Ar tęsti su Flutter app dabar?
-2. Ar reikia papildomų backend funkcijų prieš mobile?
-3. Ar reikia authentication prieš mobile app?
+### Priorities
+1. Continue with the Flutter app now?
+2. More backend work before mobile?
+3. Authentication before the mobile app?
 
 ---
 
-## 📞 Klausimų Punktai
+## Open questions (original)
 
-1. **CPO Integration**: Kuriuos realius CPO norėtumėte integruoti pirmuosius?
-2. **Payment Provider**: Stripe ar kitas payment gateway?
-3. **Maps**: Google Maps ar Mapbox mobile app'ui?
-4. **Authentication**: Email/Password ar Social login (Google/Apple)?
-5. **Deployment**: Kur planuojate host'inti backend (AWS, Azure, GCP)?
-
-Prašau peržiūrėti ir pareikšti pastabas!
+1. **CPO integration:** Which live CPOs first?
+2. **Payments:** Stripe or another gateway?
+3. **Maps:** Google Maps or Mapbox on mobile?
+4. **Authentication:** Email/password or social (Google/Apple)?
+5. **Deployment:** Where to host the backend (AWS, Azure, GCP)?
