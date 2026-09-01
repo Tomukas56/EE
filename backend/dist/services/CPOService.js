@@ -28,31 +28,52 @@ const CONNECTION_TYPE_MAP = {
 const OCM_BASE = "https://api.openchargemap.io/v3";
 export class CPOService {
     apiKey;
-    country;
+    countries;
     maxResults;
     constructor() {
         this.apiKey = (process.env.CPOAPI || "").trim();
-        this.country = (process.env.OCM_COUNTRY || "LT").trim();
-        this.maxResults = Number(process.env.OCM_MAX_RESULTS || 5000);
+        const fromList = (process.env.OCM_COUNTRIES || "").trim();
+        const fromSingle = (process.env.OCM_COUNTRY || "").trim();
+        this.countries = (fromList || fromSingle || "LT,LV,EE,PL")
+            .split(",")
+            .map((code) => code.trim().toUpperCase())
+            .filter(Boolean);
+        this.maxResults = Number(process.env.OCM_MAX_RESULTS || 10000);
+    }
+    get configuredCountries() {
+        return [...this.countries];
     }
     async fetchStations() {
         if (!this.apiKey) {
             throw new Error("CPOAPI is not set — cannot fetch Open Charge Map data");
         }
-        const [reference, pois] = await Promise.all([
-            this.getJson("referencedata"),
-            this.getJson(`poi/?output=json&countrycode=${encodeURIComponent(this.country)}` +
-                `&maxresults=${this.maxResults}&compact=true&verbose=false`),
-        ]);
+        const reference = await this.getJson("referencedata");
         const operators = indexById(reference.Operators || []);
         const usageTypes = indexById(reference.UsageTypes || []);
-        const stations = [];
-        for (const poi of pois) {
-            const mapped = this.mapPoi(poi, operators, usageTypes);
-            if (mapped)
-                stations.push(mapped);
+        const seen = new Set();
+        const merged = [];
+        const fetchedCountries = [];
+        for (const country of this.countries) {
+            try {
+                const pois = await this.getJson(`poi/?output=json&countrycode=${encodeURIComponent(country)}` +
+                    `&maxresults=${this.maxResults}&compact=true&verbose=false`);
+                let mappedCount = 0;
+                for (const poi of pois) {
+                    const mapped = this.mapPoi(poi, operators, usageTypes, country);
+                    if (!mapped || seen.has(mapped.external_id))
+                        continue;
+                    seen.add(mapped.external_id);
+                    merged.push(mapped);
+                    mappedCount += 1;
+                }
+                fetchedCountries.push(country);
+                console.log(`[CPOService] ${country}: ${mappedCount} mappable stations (${pois.length} POIs)`);
+            }
+            catch (error) {
+                console.error(`[CPOService] ${country} fetch failed — keeping existing rows for that country:`, error);
+            }
         }
-        return stations;
+        return { stations: merged, fetchedCountries };
     }
     async getJson(path) {
         const response = await fetch(`${OCM_BASE}/${path}`, {
@@ -67,7 +88,7 @@ export class CPOService {
         }
         return response.json();
     }
-    mapPoi(poi, operators, usageTypes) {
+    mapPoi(poi, operators, usageTypes, countryCode) {
         if (SKIP_STATION_STATUS_IDS.has(poi.StatusTypeID ?? -1)) {
             return null;
         }
@@ -96,6 +117,7 @@ export class CPOService {
             name: (address?.Title || `OCM ${poi.ID}`).trim(),
             operator_name: operator?.Title || "Unknown",
             address: addressParts.join(", ") || (address?.Title || "Unknown address"),
+            country_code: countryCode,
             latitude,
             longitude,
             is_public: isPublic,

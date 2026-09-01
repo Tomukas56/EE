@@ -30,6 +30,4 @@ Flutter app  --HTTP-->  Express API  -->  Prisma  -->  PostgreSQL
 - Sync upserts by station **name**, then deletes/recreates connectors (IDs change every sync).
 
 ## Known repo quirks
-- Nested copy `OneDrive - teltonika.lt/Documents/ENERGY/` is a duplicate of the project and should not be treated as source.
-- `npm run dev` points at `src/index.js` (wrong); use `npm run build && npm start`.
 - Task Master is initialized but has **no tasks**.

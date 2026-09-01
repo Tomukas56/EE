@@ -16,6 +16,7 @@ model Station {
   name           String
   operator_name  String?
   address        String
+  country_code   String?
   latitude       Decimal?    @db.Decimal(10, 7)
   longitude      Decimal?    @db.Decimal(10, 7)
   is_public      Boolean     @default(true)
@@ -25,6 +26,7 @@ model Station {
   last_synced_at DateTime?
   connectors     Connector[]
   checkIns       SiteCheckIn[]
+  chargingSessions ChargingSession[]
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
@@ -106,4 +108,25 @@ model SiteCheckIn {
   createdAt       DateTime    @default(now())
 
   @@map("site_check_in")
+}
+
+/// Lab charging session. Not sent to a CPO — start/stop and kWh estimate only.
+model ChargingSession {
+  id              String    @id @default(uuid())
+  station_id      String
+  station         Station   @relation(fields: [station_id], references: [id], onDelete: Cascade)
+  reporter_id     String
+  connector_type  String?
+  max_power_kw    Decimal?  @db.Decimal(10, 2)
+  started_at      DateTime  @default(now())
+  ended_at        DateTime?
+  energy_kwh      Decimal?  @db.Decimal(10, 2)
+  cost_eur        Decimal?  @db.Decimal(10, 2)
+  status          String    @default("charging")
+  payment_method  String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([reporter_id, status])
+  @@map("charging_session")
 }

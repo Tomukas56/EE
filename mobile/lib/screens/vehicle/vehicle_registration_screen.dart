@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../models/vehicle.dart';
+import '../../providers/vehicle_provider.dart';
 
-class VehicleRegistrationScreen extends StatefulWidget {
+class VehicleRegistrationScreen extends ConsumerStatefulWidget {
   const VehicleRegistrationScreen({super.key});
 
   @override
-  State<VehicleRegistrationScreen> createState() =>
+  ConsumerState<VehicleRegistrationScreen> createState() =>
       _VehicleRegistrationScreenState();
 }
 
-class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
+class _VehicleRegistrationScreenState
+    extends ConsumerState<VehicleRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _makeController = TextEditingController();
   final _modelController = TextEditingController();
   final _capacityController = TextEditingController();
   final _rangeController = TextEditingController();
   String _selectedConnector = 'CCS2';
+  bool _hydrated = false;
 
   final List<String> _connectorTypes = ['CCS2', 'Type 2', 'CHAdeMO', 'Tesla'];
 
@@ -30,35 +34,43 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
     super.dispose();
   }
 
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      // Create vehicle object (Mock save)
-      final vehicle = Vehicle(
-        id: 'v1',
-        make: _makeController.text,
-        model: _modelController.text,
-        batteryCapacityKWh: double.parse(_capacityController.text),
-        maxRangeKm: double.parse(_rangeController.text),
-        connectorType: _selectedConnector,
-      );
-
-      // Show success and navigate to Home
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Vehicle ${vehicle.make} ${vehicle.model} saved!'),
-          backgroundColor: AppColors.successGreen,
-        ),
-      );
-
-      // Navigate to Home after delay
-      Future.delayed(const Duration(seconds: 1), () {
-        if (mounted) context.goNamed('home');
-      });
-    }
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
+    final vehicle = Vehicle(
+      id: 'v1',
+      make: _makeController.text.trim(),
+      model: _modelController.text.trim(),
+      batteryCapacityKWh: double.parse(_capacityController.text),
+      maxRangeKm: double.parse(_rangeController.text),
+      connectorType: _selectedConnector,
+    );
+    await ref.read(vehicleProvider.notifier).save(vehicle);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Vehicle ${vehicle.label} saved on this device'),
+        backgroundColor: AppColors.successGreen,
+      ),
+    );
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) context.goNamed('home');
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final saved = ref.watch(vehicleProvider);
+    if (!_hydrated && saved != null) {
+      _hydrated = true;
+      _makeController.text = saved.make;
+      _modelController.text = saved.model;
+      _capacityController.text = saved.batteryCapacityKWh.toStringAsFixed(0);
+      _rangeController.text = saved.maxRangeKm.toStringAsFixed(0);
+      if (_connectorTypes.contains(saved.connectorType)) {
+        _selectedConnector = saved.connectorType;
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Vehicle Setup'), centerTitle: true),
       body: SafeArea(
@@ -78,13 +90,13 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'To calculate smart routes, we need your car details.',
+                  saved == null
+                      ? 'Saved on this tablet. Used for trip range and plug filters.'
+                      : 'Saved: ${saved.label}',
                   style: Theme.of(context).textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
-
-                // Make
                 TextFormField(
                   controller: _makeController,
                   decoration: const InputDecoration(
@@ -97,8 +109,6 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                       : null,
                 ),
                 const SizedBox(height: 16),
-
-                // Model
                 TextFormField(
                   controller: _modelController,
                   decoration: const InputDecoration(
@@ -111,8 +121,6 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                       : null,
                 ),
                 const SizedBox(height: 16),
-
-                // Battery Capacity
                 TextFormField(
                   controller: _capacityController,
                   keyboardType: TextInputType.number,
@@ -129,8 +137,6 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-
-                // Max Range
                 TextFormField(
                   controller: _rangeController,
                   keyboardType: TextInputType.number,
@@ -147,8 +153,6 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-
-                // Connector Type Dropdown
                 DropdownButtonFormField<String>(
                   value: _selectedConnector,
                   decoration: const InputDecoration(
@@ -165,8 +169,6 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                   },
                 ),
                 const SizedBox(height: 32),
-
-                // Submit Button
                 ElevatedButton(
                   onPressed: _submitForm,
                   child: const Text('Save & Continue'),

@@ -22,14 +22,26 @@ class LocationService {
       throw StateError('Location permission was not granted');
     }
 
-    final position = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.medium,
-      ),
-    );
-    return DevicePosition(
-      latitude: position.latitude,
-      longitude: position.longitude,
-    );
+    final last = await Geolocator.getLastKnownPosition();
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 8),
+        ),
+      );
+      return DevicePosition(
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
+    } catch (_) {
+      if (last != null) {
+        return DevicePosition(
+          latitude: last.latitude,
+          longitude: last.longitude,
+        );
+      }
+      rethrow;
+    }
   }
 }

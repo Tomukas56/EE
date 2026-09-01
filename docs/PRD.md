@@ -60,7 +60,7 @@ Energy Eniwhere is a comprehensive mobile application for Electric Vehicle (EV) 
 *   **Platform**: Flutter (iOS/Android/Web).
 *   **Backend**: Node.js + Prisma + PostgreSQL.
 *   **Maps**: Google Maps Platform (Maps SDK, later Directions / Places).
-*   **Station catalogue (today)**: Open Charge Map (Lithuania) + owner-confirmed user submissions.
+*   **Station catalogue (today)**: Open Charge Map (Lithuania, Latvia, Estonia, Poland) + owner-confirmed user submissions.
 *   **Payments (target)**: Stripe Payment Sheet + Apple Pay / Google Pay (device wallet). EE must not store raw card numbers.
 
 ## 4. Success Metrics
@@ -72,7 +72,7 @@ Energy Eniwhere is a comprehensive mobile application for Electric Vehicle (EV) 
 
 ## 5. Security and compliance standards (this product class)
 
-Energy Eniwhere is an **EU consumer mobile app**, an **EV charging aggregator (eMSP-style)**, and (when payments go live) a **payment-initiating client**. It is **not** a CPO and does not operate charging hardware. The following standards apply. Formal certification is a later milestone; the gap table in §6 is the current honest status.
+Energy Eniwhere is an **EU consumer mobile app**, an **EV charging aggregator (eMSP-style)**, and (when payments go live) a **payment-initiating client**. It is **not** a CPO and does not operate charging hardware. The following standards apply. Formal certification is a later milestone; the gap table in §6 and [SECURITY_COMPLIANCE.md](specs/SECURITY_COMPLIANCE.md) are the current honest status.
 
 ### 5.1 Personal data and privacy (mandatory for launch in LT/EU)
 
@@ -97,6 +97,7 @@ Energy Eniwhere is an **EU consumer mobile app**, an **EV charging aggregator (e
 | **OWASP MASVS 2.0** and **OWASP Mobile Top 10 (2024)** | Auth, storage, network, reverse engineering, privacy. |
 | **OWASP ASVS 4.0** (API) | Backend: authn/z, injection, session, error handling. |
 | **TLS 1.2+** (prefer **1.3**) for all production traffic | Data in transit. Local HTTP to a LAN API is **dev only**. |
+| **Regulation (EU) 2024/2847 Cyber Resilience Act (CRA)** / Lithuanian **Kibernetinio atsparumo aktas** | The Flutter app is a **product with digital elements**; the EE API is **remote data processing** without which the app cannot list stations or take reports. Manufacturer duties (Annex I, vulnerability handling, SBOM, support period, from 11 Sep 2026 Art. 14 reporting for products on the Union market, from 11 Dec 2027 CE / EU declaration) apply when EE is made available on Play/App Store. Lab USB builds are not placing on the market. Full register: [SECURITY_COMPLIANCE.md](specs/SECURITY_COMPLIANCE.md). |
 | **OAuth 2.0 / OIDC** | Google Sign-In. |
 | **Secure storage** | Tokens in Android Keystore / iOS Keychain — not SharedPreferences in production. |
 
@@ -158,6 +159,7 @@ Energy Eniwhere is an **EU consumer mobile app**, an **EV charging aggregator (e
 | OCM attribution | OCM licence | **Partial** | Data used; licence text not shown on every map. |
 | OCPI security | OCPI | **N/A yet** | No CPO link. Occupancy is UNKNOWN. |
 | ISO 27001 / NIS2 / DORA | Org | **N/A** | Not claimed. |
+| Cyber Resilience Act (EU) 2024/2847 | CRA | **Gap** | No risk assessment, SBOM, CVD, Art. 14 playbook, CE/DoC. Do not list on EU stores until reporting contact exists (Art. 14 from 11 Sep 2026 for products on the market). See docs/specs/SECURITY_COMPLIANCE.md. |
 | Accessibility WCAG | Stores | **Gap** | Not audited. |
 | Crowd publish-after-owner-confirm | This PRD | **Implemented (lab)** | Pending submissions hidden; owner PIN confirms physical location; then public map. |
 | Arrival Yes/No/Dismiss | This PRD | **Implemented (lab)** | Working + free connectors; stored as check-ins. |

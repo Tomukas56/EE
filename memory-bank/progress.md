@@ -1,22 +1,21 @@
 # Progress
 
-## What works locally (verified 2026-08-31)
+## What works locally (verified 2026-09-01)
 
 ### Backend
-- PostgreSQL schema (`station`, `connector`) including `external_id` for OCM
-- SyncWorker pulls **Open Charge Map** Lithuania POIs on boot and daily 02:00 → **1908 stations**
-- `GET /` health
-- `GET /api/stations` list with availability counts (OCM occupancy is `UNKNOWN`, so available counts stay 0)
-- `GET /api/stations/:id` detail with connectors
+- PostgreSQL schema: `station`, `connector`, `charging_session`, crowd tables
+- SyncWorker pulls Open Charge Map LT/LV/EE/PL on boot and daily 02:00 → ~2590 mappable
+- `GET /api/stations` includes `connector_types` and `max_power_kw`
+- `POST /api/sessions`, `GET /api/sessions?reporterId=`, `POST /api/sessions/:id/stop` (lab estimate)
 - Helmet, CORS
 - Stripe payment routes exist but are inert without a secret key
+- `npm run dev` = `tsx watch src/index.ts`
 
-### Mobile (code compiles; `flutter analyze` = 0 errors, 1 warning, infos)
-- Screens: welcome, vehicle form, home (root/submenu), list, detail, Google Map with station pins, route planner UI, charging history, payment history
-- List/detail talk to the live API
-- Search on the list (client-side)
+### Mobile
+- Screens: welcome, vehicle (persisted), home, list + filters, detail with Start/Stop, Google Map, trip planner, charging/payment history from API
+- Search, country, connector, min kW filters
 - External navigation / call / website from detail
-- Google Maps key is wired (Android / web / iOS). Google Sign-In still needs SHA-1 in Firebase.
+- Google Maps key is wired. Google Sign-In still needs SHA-1 in Firebase.
 
 ## Completeness vs PRD (honest)
 
@@ -24,23 +23,23 @@
 |------------|------|---------|-------|
 | Station list + detail | Required | Live API + UI | **Done** |
 | Map with pins | Required | Google Maps + station pins | **Done** |
-| Filters (type, kW, distance) | Required | Name/address search only | **Partial** |
-| Nearest station | Required | “Coming soon” | **Not started** |
-| Auth (Google/Apple/email) | Required | Packages present, Firebase disabled | **UI only** |
-| Vehicle profile | Mandatory | Form exists, not persisted | **UI only** |
-| Route planning | Core | Fake “1 stop” snackbar | **UI only** |
-| Session start/stop | Core | No API, no UI action | **Not started** |
-| Payments | Core | Stripe skeleton + mock history | **Partial backend** |
-| Real CPO / OCPI | Planned | Open Charge Map static POIs (LT); no OCPI occupancy | **Partial** |
-| Users / sessions tables | Architecture | Not in Prisma | **Not started** |
+| Filters (type, kW, distance) | Required | Country, plug, min kW, search; radius via zoom | **Lab done** |
+| Nearest station | Required | Map `nearest=1` | **Done** |
+| Auth (Google/Apple/email) | Required | Local device session; Firebase SHA-1 missing | **Lab only** |
+| Vehicle profile | Mandatory | Saved on device | **Lab done** |
+| Route planning | Core | Directions or Nominatim + one suggested stop | **Lab done** |
+| Session start/stop | Core | Lab DB estimate, not CPO | **Lab done** |
+| Payments | Core | History = lab-estimate; no Stripe | **Partial** |
+| Real CPO / OCPI | Planned | OCM static POIs; occupancy UNKNOWN | **Partial** |
+| Users table / JWT | Architecture | reporter_id string only | **Not started** |
 | Tests | Engineering | `npm test` is a stub | **Not started** |
-| Docker Compose | Dev env | File exists; Docker not on this Mac | **Blocked locally** |
+| Docker Compose | Dev env | Docker not on this Mac | **Blocked locally** |
 
-**Overall vs full PRD: ~30–35%.**  
+**Overall vs full PRD: ~35–40%.**  
 **Vs Phase-1 backend MVP (stations API): ~90%.**  
-**Vs Flutter shell / demo screens: ~70% UI, ~25% real data.**
+Lab sessions/history/filters/vehicle/trip are usable on the tablet. Store, PCI, CRA, OCPI, iOS are not.
 
-Docs that say “85% / production-ready” describe a Windows demo snapshot and overstate production readiness (no auth, no sessions, no tests, mock payments, no real CPOs).
+Docs that say “85% / production-ready” overstate production readiness.
 
 ## Left to build
-See the action plan in `activeContext.md` and the session reply. Highest leverage after local bring-up: map + geo API, real auth/vehicle persistence, then sessions/payments, then OCPI.
+See `docs/specs/PROBLEMS.txt` items 2, 5, 7–22, 24–25.

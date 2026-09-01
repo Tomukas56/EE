@@ -6,7 +6,7 @@
 | macOS | 13.7.8 Ventura (darwin-x64) |
 | Node | v23.11.0 |
 | Flutter | **3.32.8 / Dart 3.8.1** — latest Flutter (3.47) requires macOS 14+ |
-| Docker | **Not installed** |
+| Docker | **Colima v0.10.3** (not Docker Desktop). CLI in `~/.local/bin`. Engine: Ubuntu 24.04 VM via macOS Virtualization. Start: `colima start --vm-type vz`. Socket: `unix://$HOME/.colima/default/docker.sock` |
 | PostgreSQL | Postgres.app **18.3 on port 5434** (Homebrew `@14` is installed but not running) |
 | Android Studio / SDK | Present (android-36) |
 | Chrome | Present — web target available |
@@ -14,7 +14,7 @@
 | Homebrew | Broken (needs Ruby 4.0) — do not rely on `brew services` |
 
 ## Runtime configuration (gitignored)
-- Root `.env`: Docker Compose DB vars (unused until Docker exists)
+- Root `.env`: Docker Compose DB vars (optional; live API uses Postgres.app on 5434, not Compose)
 - `backend/.env`: `DATABASE_URL` → `127.0.0.1:5434/energy_db`, user `energy_admin_secure`
 - `STRIPE_SECRET_KEY` empty — payment routes return 500 until a test key is added
 

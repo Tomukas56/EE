@@ -28,10 +28,11 @@ export class SyncWorker {
     async syncStations() {
         try {
             console.log('[SyncWorker] Fetching stations from Open Charge Map...');
-            const stations = await this.cpoService.fetchStations();
-            if (stations.length === 0) {
+            const { stations, fetchedCountries } = await this.cpoService.fetchStations();
+            if (stations.length === 0 || fetchedCountries.length === 0) {
                 throw new Error('Open Charge Map returned no mappable stations — leaving existing data unchanged');
             }
+            console.log(`[SyncWorker] Fetched ${stations.length} stations from ${fetchedCountries.join(',')}`);
             const syncedIds = [];
             const now = new Date();
             for (const incoming of stations) {
@@ -60,7 +61,12 @@ export class SyncWorker {
                         {
                             OR: [
                                 { external_id: null },
-                                { external_id: { notIn: syncedIds } },
+                                {
+                                    AND: [
+                                        { country_code: { in: fetchedCountries } },
+                                        { external_id: { notIn: syncedIds } },
+                                    ],
+                                },
                             ],
                         },
                     ],
@@ -80,6 +86,7 @@ export class SyncWorker {
             name: incoming.name,
             operator_name: incoming.operator_name,
             address: incoming.address,
+            country_code: incoming.country_code,
             latitude: incoming.latitude,
             longitude: incoming.longitude,
             is_public: incoming.is_public,

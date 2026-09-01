@@ -1,1 +1,0 @@
-# Mobile App\n\nFlutter SDK is missing. Please install Flutter to initialize the project.

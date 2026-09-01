@@ -1,8 +1,12 @@
 import express, {} from 'express';
 import prisma from '../lib/prisma.js';
 const router = express.Router();
+function wantsJson(req) {
+    const accept = req.get('accept') ?? '';
+    return accept.includes('application/json');
+}
 function isBrowserDocument(req) {
-    return req.get('sec-fetch-dest') === 'document';
+    return req.get('sec-fetch-dest') === 'document' && !wantsJson(req);
 }
 function escapeHtml(value) {
     return value
@@ -57,16 +61,20 @@ router.get('/', async (req, res) => {
             name: station.name,
             operator_name: station.operator_name,
             address: station.address,
+            country_code: station.country_code,
             latitude: station.latitude ? Number(station.latitude) : null,
             longitude: station.longitude ? Number(station.longitude) : null,
             is_public: station.is_public,
             connector_count: station.connectors.length,
-            available_connectors: station.connectors.filter(c => c.status === 'AVAILABLE').length
+            available_connectors: station.connectors.filter(c => c.status === 'AVAILABLE').length,
+            connector_types: [...new Set(station.connectors.map(c => c.type))],
+            max_power_kw: station.connectors.reduce((max, c) => Math.max(max, Number(c.max_power_kw) || 0), 0),
         }));
         if (isBrowserDocument(req)) {
             const rows = response.map(station => `
               <tr>
                 <td><a href="/api/stations/${encodeURIComponent(station.id)}">${escapeHtml(station.name)}</a></td>
+                <td>${escapeHtml(station.country_code || '—')}</td>
                 <td>${escapeHtml(station.operator_name || '—')}</td>
                 <td>${escapeHtml(station.address)}</td>
                 <td>${station.connector_count}</td>
@@ -74,12 +82,12 @@ router.get('/', async (req, res) => {
             res.type('html').send(page('Energy Eniwhere — Stations', `
               <header>
                 <h1>Energy Eniwhere</h1>
-                <p>${response.length} charging stations from Open Charge Map (Lithuania). Occupancy is not live.</p>
+                <p>${response.length} charging stations from Open Charge Map (LT, LV, EE, PL). Occupancy is not live.</p>
               </header>
               <main>
                 <input id="q" type="search" placeholder="Filter by name, operator, address…" oninput="filterRows()"/>
                 <table>
-                  <thead><tr><th>Station</th><th>Operator</th><th>Address</th><th>Connectors</th></tr></thead>
+                  <thead><tr><th>Station</th><th>Country</th><th>Operator</th><th>Address</th><th>Connectors</th></tr></thead>
                   <tbody id="rows">${rows}</tbody>
                 </table>
               </main>
@@ -122,6 +130,7 @@ router.get('/:id', async (req, res) => {
             name: station.name,
             operator_name: station.operator_name,
             address: station.address,
+            country_code: station.country_code,
             latitude: station.latitude ? Number(station.latitude) : null,
             longitude: station.longitude ? Number(station.longitude) : null,
             is_public: station.is_public,

@@ -71,3 +71,32 @@
 - [ ] **Secrets Management**: Never commit `.env` files; use Vault or Cloud Secret Manager.
 - [ ] **Input Validation**: Sanitize all inputs to prevent SQL Injection (use ORM).
 - [ ] **Logging**: Centralized logging for security audits (excluding sensitive data).
+
+---
+
+## 4. Decision (2026-09-01) — payments, compliance, when to test
+
+### 4.1 How payments exist in code
+
+They are **not live**. There is no `Payment` / `ChargingSession` table. Backend `POST /api/payments/*` wraps Stripe (`PaymentIntent`, customer, attach method) and is **unauthenticated**. `STRIPE_SECRET_KEY` is empty, so every call fails. Flutter has `flutter_stripe` / `pay` in pubspec and a `PaymentService` pointed at `localhost:3000`, but **no screen calls them**. History screens show three hard-coded mock rows.
+
+**Target when money goes live:** session end → PaymentIntent → Stripe Payment Sheet (Apple Pay / Google Pay) → webhook `payment_intent.succeeded`. Card numbers never touch EE (PCI **SAQ A**). SCA is Stripe + wallet, not EE as a payment institution.
+
+### 4.2 Compliance — two regimes
+
+| Regime | What we claim | What we do not claim |
+|--------|----------------|----------------------|
+| **Lab / USB tablet** | Functional MVP: map, OCM catalogue, crowd + owner PIN, agreement | GDPR-certified, PCI-compliant, production-ready |
+| **Store + real charges** | Must close PRD §6 gaps: HTTPS, OIDC/JWT, Keystore, privacy notice, DSR, DPIA, Stripe test then live, Maps key restriction, no PIN, no cleartext | ISO 27001, NIS2, DORA — not required at this size; do not advertise them |
+
+PSD2 / PCI apply **before the first real charge**, not before lab QA of the map. GDPR/ePrivacy already apply to Google account + location + crowd reports; the Agreement is not a full privacy programme.
+
+### 4.3 Testing gate
+
+* **Start now:** laboratory functional QA (map ±300 m, LT/LV/EE/PL, list/detail, crowd, arrival, agreement).
+* **Do not start:** payment / session / wallet tests (nothing real to test).
+* **Next after lab QA:** vulnerability review (MASVS/ASVS). Do not treat a lab HTTP API and owner PIN as a production security baseline.
+
+The full requirements register, including the **Cyber Resilience Act (EU) 2024/2847**, is [SECURITY_COMPLIANCE.md](SECURITY_COMPLIANCE.md).
+
+

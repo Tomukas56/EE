@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/station.dart';
 import '../providers/auth_provider.dart';
+import '../providers/sessions_provider.dart';
 import '../providers/stations_provider.dart';
 import '../widgets/arrival_check_sheet.dart';
 import '../widgets/connector_badge.dart';
@@ -64,6 +65,61 @@ class StationDetailScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _startCharge(
+    BuildContext context,
+    WidgetRef ref,
+    StationDetail station,
+  ) async {
+    final user = ref.read(sessionProvider);
+    try {
+      await ref.read(apiServiceProvider).startSession(
+            stationId: station.id,
+            reporterId: labReporterId(user),
+            connectorType: station.connectors.isNotEmpty
+                ? station.connectors.first.type.name
+                : null,
+          );
+      ref.invalidate(chargingHistoryProvider);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Lab charging started. Stop to estimate kWh at €0.32/kWh.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not start: $error')),
+      );
+    }
+  }
+
+  Future<void> _stopCharge(
+    BuildContext context,
+    WidgetRef ref,
+    String sessionId,
+  ) async {
+    try {
+      final session = await ref.read(apiServiceProvider).stopSession(sessionId);
+      ref.invalidate(chargingHistoryProvider);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Stopped: ${session.energyKwh.toStringAsFixed(1)} kWh · €${session.costEur.toStringAsFixed(2)} (lab estimate)',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not stop: $error')),
+      );
+    }
+  }
+
   Future<void> _launchWebsite(String? website) async {
     if (website == null) return;
 
@@ -76,6 +132,7 @@ class StationDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stationAsync = ref.watch(stationDetailProvider(stationId));
+    final openSession = ref.watch(openSessionProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Station Details')),
@@ -192,10 +249,46 @@ class StationDetailScreen extends ConsumerWidget {
                           (connector) => ConnectorBadge(connector: connector),
                         ),
                       const SizedBox(height: 20),
+                      if (openSession != null &&
+                          openSession.stationId != station.id)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            'A session is already open at ${openSession.stationName}. Stop it first.',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      if (openSession != null &&
+                          openSession.stationId == station.id)
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () =>
+                                _stopCharge(context, ref, openSession.id),
+                            icon: const Icon(Icons.stop_circle),
+                            label: const Text('Stop charging (lab)'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF6B35),
+                            ),
+                          ),
+                        )
+                      else
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: openSession != null
+                                ? null
+                                : () => _startCharge(context, ref, station),
+                            icon: const Icon(Icons.bolt),
+                            label: const Text('Start charging (lab)'),
+                          ),
+                        ),
+                      const SizedBox(height: 12),
                       SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () => _reportArrival(context, ref, station),
+                        child: OutlinedButton.icon(
+                          onPressed: () =>
+                              _reportArrival(context, ref, station),
                           icon: const Icon(Icons.flag_circle),
                           label: const Text("I've arrived — confirm status"),
                         ),

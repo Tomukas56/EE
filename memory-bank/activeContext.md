@@ -1,34 +1,30 @@
 # Active Context
 
-## Focus (2026-08-31)
-Google account is required before any charging UI. After sign-in, home is a **root menu** (Stations, Trip, History, Account) whose tiles fill the window; each opens a **submenu**. Android Google Sign-In still needs SHA-1 in Firebase (`oauth_client` is empty). iOS needs a real OAuth client + matching bundle ID.
+## Focus (2026-09-01)
+Laboratory functions that can run without Stripe / Firebase SHA-1 / Docker / OCPI: vehicle persist, connector/kW filters, lab charging sessions, history from API, trip planner, `npm run dev`.
+
+Do **not** claim done: live Stripe/PCI, OCPI occupancy, iOS, CRA/CE, production HTTPS, Maps key restriction, User JWT, Docker.
 
 ## Decisions this session
-- Use **Postgres.app on 5434** instead of Docker (Docker is not installed; schema does not need PostGIS).
-- Keep Stripe **optional** so the API boots without `STRIPE_SECRET_KEY`.
-- Stay on **Flutter 3.32.8** (macOS 13). Do not `flutter upgrade` until the OS is 14+.
-- Pin `google_fonts` to 6.2.1 and relax the Dart SDK constraint so `flutter pub get` works.
-- Station static data comes from **Open Charge Map**; occupancy is stored as `UNKNOWN`.
-- Stations keyed by `external_id` = `ocm:{id}`.
-- Map: **Google Maps** (`google_maps_flutter`) with the Cloud Maps key in AndroidManifest, `web/google_maps_key.js`, iOS `AppDelegate`, and `AppConfig`. OSM/Carto remains the fallback if the key is cleared.
-- Dark theme uses `#F5F5F7` / `#D1D1D6` on dark surfaces — never black or mid-gray text on black.
-- Sign-in screen includes **Sutartis** (service rules) and **README** (what the app is / how to use it). Google is enabled only after the user ticks agreement.
-- Chrome Google Maps JS key lives in `mobile/web/google_maps_key.js` (empty = keep OSM).
+- Lab charging is local DB only: energy = elapsed hours × max connector kW (min 1 minute), €0.32/kWh, `payment_method: lab-estimate`.
+- Vehicle profile stays on-device (SharedPreferences), not a User table.
+- Trip planner uses Google Directions when the existing Maps key allows it; otherwise Nominatim + 1.3× straight-line.
+- Filters: country + connector type + min kW. Operator is the existing search field.
+- `npm run dev` is `tsx watch src/index.ts`. Production-style lab still uses `npm start` after `tsc`.
 
 ## What is running
-- API: `npm start` in `backend/` on port 3000 (`0.0.0.0`)
+- API: `node dist/index.js` in `backend/` on port 3000 (`0.0.0.0`)
 - DB: `energy_db` on 127.0.0.1:5434
-- Last OCM sync: **1914** Lithuanian stations (mock 7 rows removed)
+- Last OCM sync: **2590** mappable (LT ~1909, LV ~93, EE ~170, PL ~418); public list ~2543
+- Tablet: Samsung SM-T585 — `adb reverse tcp:3000 tcp:3000`
 
 ## Next work (priority)
-1. Persist users + vehicles (Firebase or backend JWT) — crowd APIs still have no user JWT
-2. Geo / connector filters on `GET /api/stations`
-3. Route planner (Directions API + energy model)
-4. Stripe Payment Sheet + Apple Pay / Google Pay (see docs/PRD.md §7)
-5. Close GDPR / TLS / MASVS gaps in docs/PRD.md §6 before any store release
-6. Remove the nested OneDrive duplicate from the repo
-7. Tests and a working `npm run dev`
+1. Laboratory QA on the tablet: Start/Stop, history, filters, vehicle, Vilnius→Riga trip
+2. Firebase SHA-1 + real Google Sign-In (then remove local bypass for store)
+3. Stripe Payment Sheet only after HTTPS + test key
+4. CRA Art. 14 playbook before any store listing
+5. Tests; DEMO.md still overstates readiness
 
-Crowd stations: pending until owner PIN (`APP_OWNER_PIN`, lab default `2468`) confirms physical location. Arrival check-ins: working + free connectors (Yes/No/Dismiss).
+Crowd stations: pending until owner PIN (`APP_OWNER_PIN`, lab default `2468`) confirms physical location.
 
 Do not treat DEMO.md “85% complete / production-ready” as accurate — see `progress.md`.

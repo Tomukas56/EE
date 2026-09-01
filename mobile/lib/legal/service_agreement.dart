@@ -7,7 +7,7 @@ class ServiceAgreement {
     (
       heading: '1. Who we are',
       body:
-          'Energy Eniwhere (EE) is an electric-vehicle charging aggregator. We are not a charge-point operator (CPO) and we do not own or run charging hardware. The app helps you find stations in Lithuania, plan trips with charging stops, and (when enabled) start a session and pay in one place.',
+          'Energy Eniwhere (EE) is an electric-vehicle charging aggregator. We are not a charge-point operator (CPO) and we do not own or run charging hardware. The app helps you find stations in Lithuania, Latvia, Estonia, and Poland, plan trips with charging stops, and (when enabled) start a session and pay in one place.',
     ),
     (
       heading: '2. Scope of the service',
@@ -52,7 +52,7 @@ class ServiceAgreement {
     (
       heading: '10. Standards we follow',
       body:
-          'EE designs and operates the service to the standards listed in the Product Requirements Document (docs/PRD.md), in particular: GDPR / Lithuanian BDAR for personal data; the ePrivacy rules for location and device identifiers; PSD2 Strong Customer Authentication and PCI DSS (via a licensed payment provider) when payments are enabled; OWASP MASVS / Mobile Top 10 for the mobile app; TLS for data in transit; Google and Apple store and identity policies; and OCPI security controls when we connect to charge-point operators. We do not claim a completed formal certification (ISO 27001, PCI ROC, or similar) until an independent audit has been completed. Where a control is not yet implemented, the PRD gap table is the honest status.',
+          'EE designs and operates the service to the standards listed in the Product Requirements Document (docs/PRD.md) and the Security & Compliance register (docs/specs/SECURITY_COMPLIANCE.md), in particular: GDPR / Lithuanian BDAR for personal data; the ePrivacy rules for location and device identifiers; the EU Cyber Resilience Act (Regulation (EU) 2024/2847) for the app as a product with digital elements and for the backend as remote data processing, including vulnerability handling when the app is made available on the Union market; PSD2 Strong Customer Authentication and PCI DSS (via a licensed payment provider) when payments are enabled; OWASP MASVS / Mobile Top 10 for the mobile app; TLS for data in transit; Google and Apple store and identity policies; and OCPI security controls when we connect to charge-point operators. We do not claim a completed formal certification (ISO 27001, PCI ROC, CRA CE marking, or similar) until the applicable assessment has been completed. Where a control is not yet implemented, the PRD gap table and the Security & Compliance register are the honest status.',
     ),
     (
       heading: '11. Third-party services',

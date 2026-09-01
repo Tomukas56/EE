@@ -216,7 +216,7 @@
 
 ## 2026-08-31 — Local bring-up on macOS 13 (Ventura)
 
-- Cloned/synced repo; nested `OneDrive - teltonika.lt/` tree is a duplicate and should be removed later.
+- Cloned/synced repo; nested `OneDrive - teltonika.lt/` duplicate was removed 2026-09-01.
 - Docker is not installed. Database runs on **Postgres.app 18.3, port 5434**, database `energy_db`.
 - `backend/.env` uses `DATABASE_URL` (Prisma does not read `DB_HOST`/`DB_PORT` alone).
 - Stripe v20 throws if constructed with an empty key. `PaymentService` now lazily creates the client so station API can boot without `STRIPE_SECRET_KEY`.

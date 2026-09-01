@@ -18,6 +18,7 @@ export interface StationData {
     name: string;
     operator_name: string;
     address: string;
+    country_code: string;
     latitude: number;
     longitude: number;
     is_public: boolean;
@@ -89,38 +90,59 @@ const OCM_BASE = "https://api.openchargemap.io/v3";
 
 export class CPOService {
     private readonly apiKey: string;
-    private readonly country: string;
+    private readonly countries: string[];
     private readonly maxResults: number;
 
     constructor() {
         this.apiKey = (process.env.CPOAPI || "").trim();
-        this.country = (process.env.OCM_COUNTRY || "LT").trim();
-        this.maxResults = Number(process.env.OCM_MAX_RESULTS || 5000);
+        const fromList = (process.env.OCM_COUNTRIES || "").trim();
+        const fromSingle = (process.env.OCM_COUNTRY || "").trim();
+        this.countries = (fromList || fromSingle || "LT,LV,EE,PL")
+            .split(",")
+            .map((code) => code.trim().toUpperCase())
+            .filter(Boolean);
+        this.maxResults = Number(process.env.OCM_MAX_RESULTS || 10000);
     }
 
-    async fetchStations(): Promise<StationData[]> {
+    get configuredCountries(): string[] {
+        return [...this.countries];
+    }
+
+    async fetchStations(): Promise<{ stations: StationData[]; fetchedCountries: string[] }> {
         if (!this.apiKey) {
             throw new Error("CPOAPI is not set — cannot fetch Open Charge Map data");
         }
 
-        const [reference, pois] = await Promise.all([
-            this.getJson<Record<string, OcmLookup[]>>("referencedata"),
-            this.getJson<OcmPoi[]>(
-                `poi/?output=json&countrycode=${encodeURIComponent(this.country)}` +
-                `&maxresults=${this.maxResults}&compact=true&verbose=false`
-            ),
-        ]);
-
+        const reference = await this.getJson<Record<string, OcmLookup[]>>("referencedata");
         const operators = indexById(reference.Operators || []);
         const usageTypes = indexById(reference.UsageTypes || []);
 
-        const stations: StationData[] = [];
-        for (const poi of pois) {
-            const mapped = this.mapPoi(poi, operators, usageTypes);
-            if (mapped) stations.push(mapped);
+        const seen = new Set<string>();
+        const merged: StationData[] = [];
+        const fetchedCountries: string[] = [];
+
+        for (const country of this.countries) {
+            try {
+                const pois = await this.getJson<OcmPoi[]>(
+                    `poi/?output=json&countrycode=${encodeURIComponent(country)}` +
+                    `&maxresults=${this.maxResults}&compact=true&verbose=false`
+                );
+                let mappedCount = 0;
+                for (const poi of pois) {
+                    const mapped = this.mapPoi(poi, operators, usageTypes, country);
+                    if (!mapped || seen.has(mapped.external_id)) continue;
+                    seen.add(mapped.external_id);
+                    merged.push(mapped);
+                    mappedCount += 1;
+                }
+                fetchedCountries.push(country);
+                console.log(`[CPOService] ${country}: ${mappedCount} mappable stations (${pois.length} POIs)`);
+            } catch (error) {
+                console.error(`[CPOService] ${country} fetch failed — keeping existing rows for that country:`, error);
+            }
         }
 
-        return stations;
+        return { stations: merged, fetchedCountries };
     }
 
     private async getJson<T>(path: string): Promise<T> {
@@ -143,6 +165,7 @@ export class CPOService {
         poi: OcmPoi,
         operators: Map<number, OcmLookup>,
         usageTypes: Map<number, OcmLookup>,
+        countryCode: string,
     ): StationData | null {
         if (SKIP_STATION_STATUS_IDS.has(poi.StatusTypeID ?? -1)) {
             return null;
@@ -177,6 +200,7 @@ export class CPOService {
             name: (address?.Title || `OCM ${poi.ID}`).trim(),
             operator_name: operator?.Title || "Unknown",
             address: addressParts.join(", ") || (address?.Title || "Unknown address"),
+            country_code: countryCode,
             latitude,
             longitude,
             is_public: isPublic,

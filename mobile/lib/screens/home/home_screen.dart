@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/stations_provider.dart';
+import '../../providers/vehicle_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -79,7 +80,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           _MenuItem(
             title: 'My vehicle',
-            subtitle: 'Battery, range, connector',
+            subtitle: ref.watch(vehicleProvider)?.label ??
+                'Battery, range, connector',
             icon: Icons.directions_car,
             gradient: const LinearGradient(
               colors: [Color(0xFF0066FF), Color(0xFF00D9C0)],
@@ -167,19 +169,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final inSubmenu = _submenu != null;
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            _MenuHeader(
-              userLabel: user?.label ?? 'Account',
-              photoUrl: user?.photoUrl,
-              stationCount: stationCount,
-              submenuTitle: _submenu?.title,
-              onBack: inSubmenu ? () => setState(() => _submenu = null) : null,
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+      backgroundColor: const Color(0xFF0B1F3A),
+      body: ColoredBox(
+        color: const Color(0xFF0B1F3A),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _MenuHeader(
+                userLabel: user?.label ?? 'Account',
+                photoUrl: user?.photoUrl,
+                stationCount: stationCount,
+                submenuTitle: _submenu?.title,
+                onBack: inSubmenu ? () => setState(() => _submenu = null) : null,
+              ),
+              Expanded(
                 child: _FillMenu(
                   items: items,
                   onOpen: (item) {
@@ -191,8 +196,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   },
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -234,8 +239,7 @@ class _MenuHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
+    return Padding(
       padding: const EdgeInsets.fromLTRB(8, 10, 16, 10),
       child: Row(
         children: [
@@ -292,16 +296,31 @@ class _FillMenu extends StatelessWidget {
   final ValueChanged<_MenuItem> onOpen;
 
   Widget _tile(_MenuItem item) {
-    return Padding(
-      padding: const EdgeInsets.all(6),
-      child: _DashboardCard(item: item, onTap: () => onOpen(item)),
-    );
+    return _DashboardCard(item: item, onTap: () => onOpen(item));
   }
 
   @override
   Widget build(BuildContext context) {
     final tiles = items.map(_tile).toList();
     final n = tiles.length;
+
+    Widget row(List<Widget> cells) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final cell in cells) Expanded(child: cell),
+        ],
+      );
+    }
+
+    Widget column(List<Widget> cells) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final cell in cells) Expanded(child: cell),
+        ],
+      );
+    }
 
     if (n <= 1) {
       return tiles.first;
@@ -311,60 +330,25 @@ class _FillMenu extends StatelessWidget {
       return LayoutBuilder(
         builder: (context, constraints) {
           final sideBySide = constraints.maxWidth >= constraints.maxHeight;
-          if (sideBySide) {
-            return Row(
-              children: [
-                Expanded(child: tiles[0]),
-                Expanded(child: tiles[1]),
-              ],
-            );
-          }
-          return Column(
-            children: [
-              Expanded(child: tiles[0]),
-              Expanded(child: tiles[1]),
-            ],
-          );
+          return sideBySide ? row(tiles) : column(tiles);
         },
       );
     }
 
     if (n == 3) {
-      return Column(
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(child: tiles[0]),
-                Expanded(child: tiles[1]),
-              ],
-            ),
-          ),
-          Expanded(child: tiles[2]),
-        ],
-      );
+      return column([
+        row([tiles[0], tiles[1]]),
+        tiles[2],
+      ]);
     }
 
-    return Column(
-      children: [
-        Expanded(
-          child: Row(
-            children: [
-              Expanded(child: tiles[0]),
-              Expanded(child: tiles[1]),
-            ],
-          ),
-        ),
-        Expanded(
-          child: Row(
-            children: [
-              Expanded(child: tiles[2]),
-              if (n > 3) Expanded(child: tiles[3]),
-            ],
-          ),
-        ),
-      ],
-    );
+    return column([
+      row([tiles[0], tiles[1]]),
+      row([
+        tiles[2],
+        if (n > 3) tiles[3],
+      ]),
+    ]);
   }
 }
 
@@ -376,53 +360,44 @@ class _DashboardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Ink(
-          decoration: BoxDecoration(
-            gradient: item.gradient,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x33000000),
-                blurRadius: 8,
-                offset: Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(item.icon, size: 52, color: Colors.white),
-                  const SizedBox(height: 10),
-                  Text(
-                    item.title,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      height: 1.15,
+    return SizedBox.expand(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Ink(
+            decoration: BoxDecoration(gradient: item.gradient),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(item.icon, size: 80, color: Colors.white),
+                    const SizedBox(height: 14),
+                    Text(
+                      item.title,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        height: 1.1,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.subtitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.88),
-                      fontSize: 13,
-                      height: 1.2,
+                    const SizedBox(height: 8),
+                    Text(
+                      item.subtitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.92),
+                        fontSize: 16,
+                        height: 1.2,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

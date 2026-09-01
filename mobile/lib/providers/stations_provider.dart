@@ -4,6 +4,7 @@ import '../services/api_service.dart';
 import '../services/location_service.dart';
 import '../utils/geo.dart';
 
+
 // API Service Provider
 final apiServiceProvider = Provider<ApiService>((ref) {
   return ApiService();
@@ -27,16 +28,51 @@ final stationDetailProvider = FutureProvider.family<StationDetail, String>((
 // Search Query Provider
 final searchQueryProvider = StateProvider<String>((ref) => '');
 
+final countryFilterProvider = StateProvider<String>((ref) => 'ALL');
+
+const connectorFilters = <({String code, String label})>[
+  (code: 'ALL', label: 'All plugs'),
+  (code: 'CCS', label: 'CCS'),
+  (code: 'TYPE2', label: 'Type 2'),
+  (code: 'CHAdeMO', label: 'CHAdeMO'),
+  (code: 'TYPE1', label: 'Type 1'),
+];
+
+const powerFilters = <({double kw, String label})>[
+  (kw: 0, label: 'Any kW'),
+  (kw: 22, label: '22+ kW'),
+  (kw: 50, label: '50+ kW'),
+  (kw: 150, label: '150+ kW'),
+];
+
+final connectorFilterProvider = StateProvider<String>((ref) => 'ALL');
+final minPowerKwProvider = StateProvider<double>((ref) => 0);
+
+bool matchesConnectorFilter(Station station, String type) {
+  if (type == 'ALL') return true;
+  if (station.connectorTypes.isEmpty) return false;
+  return station.connectorTypes.contains(type);
+}
+
+bool matchesPowerFilter(Station station, double minKw) {
+  if (minKw <= 0) return true;
+  return station.maxPowerKw >= minKw;
+}
+
 // Filtered Stations Provider
 final filteredStationsProvider = Provider<AsyncValue<List<Station>>>((ref) {
   final stationsAsync = ref.watch(stationsProvider);
   final searchQuery = ref.watch(searchQueryProvider).toLowerCase();
+  final country = ref.watch(countryFilterProvider);
+  final connector = ref.watch(connectorFilterProvider);
+  final minKw = ref.watch(minPowerKwProvider);
 
   return stationsAsync.whenData((stations) {
-    if (searchQuery.isEmpty) {
-      return stations;
-    }
     return stations.where((station) {
+      if (!matchesCountryFilter(station, country)) return false;
+      if (!matchesConnectorFilter(station, connector)) return false;
+      if (!matchesPowerFilter(station, minKw)) return false;
+      if (searchQuery.isEmpty) return true;
       return station.name.toLowerCase().contains(searchQuery) ||
           station.address.toLowerCase().contains(searchQuery) ||
           (station.operatorName?.toLowerCase().contains(searchQuery) ?? false);

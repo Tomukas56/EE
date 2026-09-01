@@ -5,22 +5,28 @@ class Station {
   final String name;
   final String? operatorName;
   final String address;
+  final String? countryCode;
   final double? latitude;
   final double? longitude;
   final bool isPublic;
   final int connectorCount;
   final int availableConnectors;
+  final List<String> connectorTypes;
+  final double maxPowerKw;
 
   Station({
     required this.id,
     required this.name,
     this.operatorName,
     required this.address,
+    this.countryCode,
     this.latitude,
     this.longitude,
     required this.isPublic,
     required this.connectorCount,
     required this.availableConnectors,
+    this.connectorTypes = const [],
+    this.maxPowerKw = 0,
   });
 
   factory Station.fromJson(Map<String, dynamic> json) {
@@ -29,6 +35,7 @@ class Station {
       name: json['name'] as String,
       operatorName: json['operator_name'] as String?,
       address: json['address'] as String,
+      countryCode: json['country_code'] as String?,
       latitude: json['latitude'] != null
           ? (json['latitude'] as num).toDouble()
           : null,
@@ -38,6 +45,13 @@ class Station {
       isPublic: json['is_public'] as bool? ?? true,
       connectorCount: json['connector_count'] as int? ?? 0,
       availableConnectors: json['available_connectors'] as int? ?? 0,
+      connectorTypes: (json['connector_types'] as List<dynamic>?)
+              ?.map((t) => t.toString())
+              .toList() ??
+          const [],
+      maxPowerKw: json['max_power_kw'] != null
+          ? (json['max_power_kw'] as num).toDouble()
+          : 0,
     );
   }
 
@@ -47,11 +61,14 @@ class Station {
       'name': name,
       'operator_name': operatorName,
       'address': address,
+      'country_code': countryCode,
       'latitude': latitude,
       'longitude': longitude,
       'is_public': isPublic,
       'connector_count': connectorCount,
       'available_connectors': availableConnectors,
+      'connector_types': connectorTypes,
+      'max_power_kw': maxPowerKw,
     };
   }
 }
@@ -67,6 +84,7 @@ class StationDetail extends Station {
     required super.name,
     super.operatorName,
     required super.address,
+    super.countryCode,
     super.latitude,
     super.longitude,
     required super.isPublic,
@@ -84,6 +102,7 @@ class StationDetail extends Station {
       name: json['name'] as String,
       operatorName: json['operator_name'] as String?,
       address: json['address'] as String,
+      countryCode: json['country_code'] as String?,
       latitude: json['latitude'] != null
           ? (json['latitude'] as num).toDouble()
           : null,

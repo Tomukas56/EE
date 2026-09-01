@@ -7,7 +7,8 @@ class ChargingSession {
   final DateTime? endTime;
   final double energyKwh;
   final double costEur;
-  final String status; // 'active', 'completed', 'failed'
+  final String status; // charging | completed
+  final String paymentMethod;
 
   ChargingSession({
     required this.id,
@@ -19,21 +20,25 @@ class ChargingSession {
     required this.energyKwh,
     required this.costEur,
     required this.status,
+    this.paymentMethod = '',
   });
+
+  bool get isOpen => status == 'charging';
 
   factory ChargingSession.fromJson(Map<String, dynamic> json) {
     return ChargingSession(
-      id: json['id'],
-      stationId: json['station_id'],
-      stationName: json['station_name'],
-      connectorType: json['connector_type'],
-      startTime: DateTime.parse(json['start_time']),
+      id: json['id'] as String? ?? '',
+      stationId: json['station_id'] as String? ?? '',
+      stationName: json['station_name'] as String? ?? '',
+      connectorType: json['connector_type'] as String? ?? 'TYPE2',
+      startTime: DateTime.parse(json['start_time'] as String),
       endTime: json['end_time'] != null
-          ? DateTime.parse(json['end_time'])
+          ? DateTime.parse(json['end_time'] as String)
           : null,
-      energyKwh: (json['energy_kwh'] as num).toDouble(),
-      costEur: (json['cost_eur'] as num).toDouble(),
-      status: json['status'],
+      energyKwh: (json['energy_kwh'] as num?)?.toDouble() ?? 0,
+      costEur: (json['cost_eur'] as num?)?.toDouble() ?? 0,
+      status: json['status'] as String? ?? 'charging',
+      paymentMethod: json['payment_method'] as String? ?? '',
     );
   }
 

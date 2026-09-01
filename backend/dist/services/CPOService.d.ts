@@ -16,6 +16,7 @@ export interface StationData {
     name: string;
     operator_name: string;
     address: string;
+    country_code: string;
     latitude: number;
     longitude: number;
     is_public: boolean;
@@ -32,10 +33,14 @@ export interface StationData {
 }
 export declare class CPOService {
     private readonly apiKey;
-    private readonly country;
+    private readonly countries;
     private readonly maxResults;
     constructor();
-    fetchStations(): Promise<StationData[]>;
+    get configuredCountries(): string[];
+    fetchStations(): Promise<{
+        stations: StationData[];
+        fetchedCountries: string[];
+    }>;
     private getJson;
     private mapPoi;
     private mapConnectors;

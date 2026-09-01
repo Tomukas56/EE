@@ -3,129 +3,124 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../models/charging_session.dart';
-
-// Mock data provider (replace with real API later)
-final chargingHistoryProvider = Provider<List<ChargingSession>>((ref) {
-  return [
-    ChargingSession(
-      id: '1',
-      stationId: '90cc06ec-54ef-4c75-97b9-bf5ea5557637',
-      stationName: 'Ignitis Charging Hub - Vilnius',
-      connectorType: 'CCS',
-      startTime: DateTime.now().subtract(const Duration(days: 2, hours: 3)),
-      endTime: DateTime.now().subtract(const Duration(days: 2, hours: 2)),
-      energyKwh: 45.2,
-      costEur: 15.82,
-      status: 'completed',
-    ),
-    ChargingSession(
-      id: '2',
-      stationId: 'a3707dc4-1565-46a8-a463-31169ebf7937',
-      stationName: 'Elinta Fast Charge - Kaunas',
-      connectorType: 'Type 2',
-      startTime: DateTime.now().subtract(const Duration(days: 5, hours: 1)),
-      endTime: DateTime.now().subtract(const Duration(days: 5)),
-      energyKwh: 32.8,
-      costEur: 8.20,
-      status: 'completed',
-    ),
-    ChargingSession(
-      id: '3',
-      stationId: 'efab2b1a-2729-4d92-bc34-3271367f7a23',
-      stationName: 'Maxima Shopping Center',
-      connectorType: 'CCS',
-      startTime: DateTime.now().subtract(const Duration(days: 7, hours: 4)),
-      endTime: DateTime.now().subtract(const Duration(days: 7, hours: 3)),
-      energyKwh: 51.5,
-      costEur: 18.03,
-      status: 'completed',
-    ),
-  ];
-});
+import '../../providers/sessions_provider.dart';
 
 class ChargingHistoryScreen extends ConsumerWidget {
   const ChargingHistoryScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sessions = ref.watch(chargingHistoryProvider);
-    final totalEnergy = sessions.fold(0.0, (sum, s) => sum + s.energyKwh);
-    final totalCost = sessions.fold(0.0, (sum, s) => sum + s.costEur);
+    final sessionsAsync = ref.watch(chargingHistoryProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Charging History'), elevation: 0),
-      body: Column(
-        children: [
-          // Stats Summary
-          Container(
-            width: double.infinity,
+      appBar: AppBar(
+        title: const Text('Charging History'),
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => ref.invalidate(chargingHistoryProvider),
+          ),
+        ],
+      ),
+      body: sessionsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Padding(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
-              ),
-            ),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _StatItem(
-                      icon: Icons.bolt,
-                      label: 'Total Energy',
-                      value: '${totalEnergy.toStringAsFixed(1)} kWh',
-                    ),
-                    _StatItem(
-                      icon: Icons.euro,
-                      label: 'Total Cost',
-                      value: '€${totalCost.toStringAsFixed(2)}',
-                    ),
-                    _StatItem(
-                      icon: Icons.ev_station,
-                      label: 'Sessions',
-                      value: '${sessions.length}',
-                    ),
-                  ],
+                Text('Could not load sessions: $error'),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () => ref.invalidate(chargingHistoryProvider),
+                  child: const Text('Retry'),
                 ),
               ],
             ),
           ),
-
-          // Sessions List
-          Expanded(
-            child: sessions.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+        ),
+        data: (sessions) {
+          final totalEnergy = sessions.fold(0.0, (sum, s) => sum + s.energyKwh);
+          final totalCost = sessions.fold(0.0, (sum, s) => sum + s.costEur);
+          return Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(24),
+                    bottomRight: Radius.circular(24),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        Icon(
-                          Icons.history,
-                          size: 64,
-                          color: Theme.of(context).colorScheme.onSurface,
+                        _StatItem(
+                          icon: Icons.bolt,
+                          label: 'Total Energy',
+                          value: '${totalEnergy.toStringAsFixed(1)} kWh',
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No charging sessions yet',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
+                        _StatItem(
+                          icon: Icons.euro,
+                          label: 'Total Cost',
+                          value: '€${totalCost.toStringAsFixed(2)}',
+                        ),
+                        _StatItem(
+                          icon: Icons.ev_station,
+                          label: 'Sessions',
+                          value: '${sessions.length}',
                         ),
                       ],
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: sessions.length,
-                    itemBuilder: (context, index) {
-                      final session = sessions[index];
-                      return _SessionCard(session: session);
-                    },
-                  ),
-          ),
-        ],
+                  ],
+                ),
+              ),
+              Expanded(
+                child: sessions.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.history,
+                              size: 64,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No charging sessions yet',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Start a lab session from a station page.',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: sessions.length,
+                        itemBuilder: (context, index) {
+                          return _SessionCard(session: sessions[index]);
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -219,13 +214,18 @@ class _SessionCard extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.successGreen.withOpacity(0.1),
+                    color: (session.isOpen
+                            ? AppColors.accentOrange
+                            : AppColors.successGreen)
+                        .withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     session.status.toUpperCase(),
                     style: TextStyle(
-                      color: AppColors.successGreen,
+                      color: session.isOpen
+                          ? AppColors.accentOrange
+                          : AppColors.successGreen,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),

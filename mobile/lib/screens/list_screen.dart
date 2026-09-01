@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/stations_provider.dart';
 import '../widgets/station_card.dart';
+import '../widgets/country_filter_bar.dart';
+import '../widgets/station_filter_bar.dart';
 
 class ListScreen extends ConsumerWidget {
   const ListScreen({super.key});
@@ -48,6 +50,14 @@ class ListScreen extends ConsumerWidget {
                 ref.read(searchQueryProvider.notifier).state = value;
               },
             ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: CountryFilterBar(),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: StationFilterBar(),
           ),
 
           // Stations List

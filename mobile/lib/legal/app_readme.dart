@@ -7,7 +7,7 @@ class AppReadme {
     (
       heading: 'What it is',
       body:
-          'Energy Eniwhere is one app for EV drivers in Lithuania. Instead of juggling operator apps (Ignitis, Elinta, Tesla, and others), you find columns here, plan a route with charging, and later start a session and pay.',
+          'Energy Eniwhere is one app for EV drivers in Lithuania, Latvia, Estonia, and Poland. Instead of juggling operator apps (Ignitis, Elinta, Tesla, and others), you find columns here, plan a route with charging, and later start a session and pay.',
     ),
     (
       heading: 'What you need',

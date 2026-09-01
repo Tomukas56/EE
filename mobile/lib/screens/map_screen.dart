@@ -14,6 +14,8 @@ import '../providers/stations_provider.dart';
 import '../services/location_service.dart';
 import '../utils/geo.dart';
 import '../widgets/arrival_check_sheet.dart';
+import '../widgets/country_filter_bar.dart';
+import '../widgets/station_filter_bar.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   final bool focusNearest;
@@ -30,10 +32,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   gmaps.GoogleMapController? _googleMap;
   final Set<gmaps.Marker> _markers = {};
   List<Station> _pins = const [];
-  bool _didFocusNearest = false;
-  double _zoom = 7.2;
+  bool _didCenterOnDevice = false;
+  bool _locateDone = false;
+  double _zoom = nearbyZoom;
+  double? _cameraLat;
+  double? _cameraLng;
   DevicePosition? _me;
   final Set<String> _promptedArrival = {};
+  bool _useGoogleMap = AppConfig.useGoogleMaps;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.microtask(_locateOnOpen);
+    if (AppConfig.useGoogleMaps) {
+      Future<void>.delayed(const Duration(seconds: 6), () {
+        if (!mounted || _googleMap != null) return;
+        setState(() => _useGoogleMap = false);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -42,12 +60,67 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     super.dispose();
   }
 
-  List<Station> _mappable(List<Station> stations) =>
-      stations.where(hasCoordinates).toList();
+  List<Station> _mappable(List<Station> stations) {
+    return stations.where(hasCoordinates).toList();
+  }
+
+  List<Station> _nearbyPins(List<Station> stations) {
+    final lat = _cameraLat ?? _me?.latitude;
+    final lng = _cameraLng ?? _me?.longitude;
+    if (lat == null || lng == null) return const [];
+    return stationsWithin(
+      stations,
+      lat,
+      lng,
+      radiusKm: radiusKmForZoom(_zoom),
+    );
+  }
+
+  Future<void> _locateOnOpen() async {
+    try {
+      final position =
+          await ref.read(locationServiceProvider).getCurrentPosition();
+      if (!mounted) return;
+      setState(() {
+        _me = position;
+        _cameraLat = position.latitude;
+        _cameraLng = position.longitude;
+        _zoom = nearbyZoom;
+        _locateDone = true;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _cameraLat = vilniusLat;
+        _cameraLng = vilniusLng;
+        _zoom = nearbyZoom;
+        _locateDone = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not get location: $error')),
+      );
+    }
+  }
+
+  Future<void> _nudgeZoom(double delta) async {
+    final next = (_zoom + delta).clamp(nearbyMinZoom, nearbyMaxZoom);
+    if ((next - _zoom).abs() < 0.05) return;
+    _zoom = next;
+    if (_useGoogleMap && _googleMap != null) {
+      await _googleMap?.animateCamera(gmaps.CameraUpdate.zoomTo(next));
+    } else {
+      final lat = _cameraLat ?? _me?.latitude ?? vilniusLat;
+      final lng = _cameraLng ?? _me?.longitude ?? vilniusLng;
+      _mapController.move(LatLng(lat, lng), next);
+    }
+    if (mounted) setState(() {});
+  }
 
   Future<void> _moveCamera(double lat, double lng, double zoom) async {
     _zoom = zoom;
-    if (AppConfig.useGoogleMaps) {
+    _cameraLat = lat;
+    _cameraLng = lng;
+    if (_useGoogleMap && _googleMap != null) {
       await _googleMap?.animateCamera(
         gmaps.CameraUpdate.newLatLngZoom(gmaps.LatLng(lat, lng), zoom),
       );
@@ -59,30 +132,45 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   void _selectStation(Station station, {bool moveCamera = true}) {
     ref.read(destinationStationProvider.notifier).state = station;
     if (moveCamera) {
-      _moveCamera(station.latitude!, station.longitude!, max(_zoom, 13));
+      _moveCamera(station.latitude!, station.longitude!, nearbyZoom);
     }
-    if (AppConfig.useGoogleMaps) {
+    if (_useGoogleMap) {
       _refreshGoogleMarkers(_pins);
     }
   }
 
   void _selectNearestTo(double lat, double lng, List<Station> stations) {
     final station = nearestStation(stations, lat, lng);
-    if (station == null) return;
+    if (station == null) {
+      _clearDestination();
+      return;
+    }
     final km = distanceKm(lat, lng, station.latitude!, station.longitude!);
     final maxKm = (40 / pow(2, _zoom - 6)).clamp(0.2, 45);
-    if (km > maxKm) return;
+    if (km > maxKm) {
+      _clearDestination();
+      return;
+    }
     _selectStation(station, moveCamera: false);
+  }
+
+  void _clearDestination() {
+    if (ref.read(destinationStationProvider) == null) return;
+    ref.read(destinationStationProvider.notifier).state = null;
+    if (_useGoogleMap) {
+      _refreshGoogleMarkers(_pins);
+    }
   }
 
   Future<void> _goToMyLocation({bool thenNearest = false}) async {
     try {
       final position = await ref.read(locationServiceProvider).getCurrentPosition();
       setState(() => _me = position);
-      await _moveCamera(position.latitude, position.longitude, 13);
+      await _moveCamera(position.latitude, position.longitude, nearbyZoom);
 
       if (thenNearest) {
-        final stations = _mappable(await ref.read(stationsProvider.future));
+        final filtered = ref.read(filteredStationsProvider).value ?? [];
+        final stations = _mappable(filtered);
         final station = nearestStation(stations, position.latitude, position.longitude);
         if (station != null) _selectStation(station);
       }
@@ -171,25 +259,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   Future<void> _refreshGoogleMarkers(List<Station> pins) async {
     _pins = pins;
-    gmaps.LatLngBounds? bounds;
-    try {
-      bounds = await _googleMap?.getVisibleRegion();
-    } catch (_) {}
-
     final selected = ref.read(destinationStationProvider);
-    var visible = pins;
-    if (bounds != null) {
-      visible = pins.where((station) {
-        return bounds!.contains(
-          gmaps.LatLng(station.latitude!, station.longitude!),
-        );
-      }).toList();
-    }
-    if (visible.length > 220) {
-      final step = visible.length / 220;
-      visible = [
-        for (var i = 0; i < 220; i++) visible[(i * step).floor()],
-      ];
+    var visible = _nearbyPins(pins);
+    if (visible.length > 40) {
+      visible = stationsNear(
+        visible,
+        _cameraLat ?? _me?.latitude ?? vilniusLat,
+        _cameraLng ?? _me?.longitude ?? vilniusLng,
+        limit: 40,
+      );
     }
     if (selected != null &&
         hasCoordinates(selected) &&
@@ -202,10 +280,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         gmaps.Marker(
           markerId: gmaps.MarkerId(station.id),
           position: gmaps.LatLng(station.latitude!, station.longitude!),
-          infoWindow: gmaps.InfoWindow(
-            title: station.name,
-            snippet: station.address,
-          ),
+          infoWindow: const gmaps.InfoWindow(),
+          consumeTapEvents: true,
           icon: gmaps.BitmapDescriptor.defaultMarkerWithHue(
             selected?.id == station.id
                 ? gmaps.BitmapDescriptor.hueOrange
@@ -225,14 +301,31 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Widget _buildBasemap(List<Station> pins) {
-    if (AppConfig.useGoogleMaps) {
+    final centerLat = _cameraLat ?? _me?.latitude ?? vilniusLat;
+    final centerLng = _cameraLng ?? _me?.longitude ?? vilniusLng;
+    if (_useGoogleMap) {
       return gmaps.GoogleMap(
-        initialCameraPosition: const gmaps.CameraPosition(
-          target: gmaps.LatLng(vilniusLat, vilniusLng),
-          zoom: 7.2,
+        initialCameraPosition: gmaps.CameraPosition(
+          target: gmaps.LatLng(centerLat, centerLng),
+          zoom: nearbyZoom,
+        ),
+        minMaxZoomPreference: const gmaps.MinMaxZoomPreference(
+          nearbyMinZoom,
+          nearbyMaxZoom,
         ),
         markers: Set<gmaps.Marker>.of(_markers),
-        myLocationEnabled: true,
+        circles: {
+          if (_me != null)
+            gmaps.Circle(
+              circleId: const gmaps.CircleId('nearby'),
+              center: gmaps.LatLng(_me!.latitude, _me!.longitude),
+              radius: radiusKmForZoom(_zoom) * 1000,
+              fillColor: const Color(0x220066FF),
+              strokeColor: const Color(0xFF0066FF),
+              strokeWidth: 1,
+            ),
+        },
+        myLocationEnabled: false,
         myLocationButtonEnabled: false,
         compassEnabled: true,
         mapToolbarEnabled: false,
@@ -246,19 +339,32 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           latLng.longitude,
           pins,
         ),
-        onCameraMove: (position) => _zoom = position.zoom,
-        onCameraIdle: () => _refreshGoogleMarkers(pins),
+        onCameraMove: (position) {
+          _zoom = position.zoom;
+          _cameraLat = position.target.latitude;
+          _cameraLng = position.target.longitude;
+        },
+        onCameraIdle: () {
+          if (mounted) setState(() {});
+          _refreshGoogleMarkers(pins);
+        },
       );
     }
 
     final destination = ref.watch(destinationStationProvider);
+    final osmPins = _nearbyPins(pins);
     return FlutterMap(
       mapController: _mapController,
       options: MapOptions(
-        initialCenter: const LatLng(vilniusLat, vilniusLng),
-        initialZoom: 7.2,
-        onPositionChanged: (camera, _) {
+        initialCenter: LatLng(centerLat, centerLng),
+        initialZoom: nearbyZoom,
+        minZoom: nearbyMinZoom,
+        maxZoom: nearbyMaxZoom,
+        onPositionChanged: (camera, hasGesture) {
           _zoom = camera.zoom;
+          _cameraLat = camera.center.latitude;
+          _cameraLng = camera.center.longitude;
+          if (!hasGesture && mounted) setState(() {});
         },
         onTap: (tap, latlng) => _selectNearestTo(
           latlng.latitude,
@@ -273,9 +379,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           userAgentPackageName: 'lt.energyeniwhere.mobile',
           retinaMode: true,
         ),
+        if (_me != null)
+          CircleLayer(
+            circles: [
+              CircleMarker(
+                point: LatLng(_me!.latitude, _me!.longitude),
+                radius: radiusKmForZoom(_zoom) * 1000,
+                useRadiusInMeter: true,
+                color: const Color(0x220066FF),
+                borderStrokeWidth: 1,
+                borderColor: const Color(0xFF0066FF),
+              ),
+            ],
+          ),
         CircleLayer(
           circles: [
-            for (final station in pins)
+            for (final station in osmPins)
               CircleMarker(
                 point: LatLng(station.latitude!, station.longitude!),
                 radius: destination?.id == station.id ? 10 : 5,
@@ -310,20 +429,33 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final stationsAsync = ref.watch(stationsProvider);
+    final stationsAsync = ref.watch(filteredStationsProvider);
     final destination = ref.watch(destinationStationProvider);
 
-    if (widget.focusNearest && !_didFocusNearest && stationsAsync.hasValue) {
+    if (widget.focusNearest &&
+        _locateDone &&
+        !_didCenterOnDevice &&
+        stationsAsync.hasValue) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_didFocusNearest || !mounted) return;
-        _didFocusNearest = true;
+        if (_didCenterOnDevice || !mounted) return;
+        _didCenterOnDevice = true;
         _goToMyLocation(thenNearest: true);
       });
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Choose a station'),
+        title: Text(
+          !_locateDone
+              ? 'Finding you…'
+              : stationsAsync.maybeWhen(
+                  data: (stations) {
+                    final n = _nearbyPins(stations).length;
+                    return '${formatRadiusKm(radiusKmForZoom(_zoom))} ($n)';
+                  },
+                  orElse: () => 'Choose a station',
+                ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.list),
@@ -332,53 +464,76 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
         ],
       ),
-      body: stationsAsync.when(
+      body: !_locateDone
+          ? const Center(child: CircularProgressIndicator())
+          : stationsAsync.when(
         data: (stations) {
-          final pins = _mappable(stations);
+          final allPins = stations.where(hasCoordinates).toList();
+          if (_useGoogleMap && _googleMap != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) _refreshGoogleMarkers(allPins);
+            });
+          }
           return Stack(
             children: [
-              _buildBasemap(pins),
+              _buildBasemap(allPins),
               Positioned(
                 top: 12,
                 left: 12,
                 right: 12,
-                child: Material(
-                  color: Colors.white,
-                  elevation: 4,
-                  borderRadius: BorderRadius.circular(12),
-                  child: TextField(
-                    controller: _searchController,
-                    textInputAction: TextInputAction.search,
-                    style: const TextStyle(
-                      color: Color(0xFF111111),
-                      fontSize: 16,
-                    ),
-                    cursorColor: const Color(0xFF0066FF),
-                    decoration: InputDecoration(
-                      hintText: 'Search station or address…',
-                      hintStyle: const TextStyle(color: Color(0xFF3A3A3C)),
-                      prefixIcon: const Icon(
-                        Icons.search,
-                        color: Color(0xFF111111),
-                      ),
-                      suffixIcon: IconButton(
-                        icon: const Icon(
-                          Icons.arrow_forward,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Material(
+                      color: Colors.white,
+                      elevation: 4,
+                      borderRadius: BorderRadius.circular(12),
+                      child: TextField(
+                        controller: _searchController,
+                        textInputAction: TextInputAction.search,
+                        style: const TextStyle(
                           color: Color(0xFF111111),
+                          fontSize: 16,
                         ),
-                        onPressed: () => _applySearch(pins),
+                        cursorColor: const Color(0xFF0066FF),
+                        decoration: InputDecoration(
+                          hintText: 'Search station or address…',
+                          hintStyle: const TextStyle(color: Color(0xFF3A3A3C)),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: Color(0xFF111111),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: const Icon(
+                              Icons.arrow_forward,
+                              color: Color(0xFF111111),
+                            ),
+                            onPressed: () => _applySearch(allPins),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onSubmitted: (_) => _applySearch(allPins),
                       ),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    onSubmitted: (_) => _applySearch(pins),
-                  ),
+                    const SizedBox(height: 8),
+                    const Material(
+                      color: Colors.transparent,
+                      child: CountryFilterBar(),
+                    ),
+                    const SizedBox(height: 8),
+                    const Material(
+                      color: Colors.transparent,
+                      child: StationFilterBar(),
+                    ),
+                  ],
                 ),
               ),
               if (destination != null)
-                _DestinationCard(
+                _StationPeekCard(
+                  key: ValueKey(destination.id),
                   station: destination,
                   distanceKm: _me == null
                       ? null
@@ -388,8 +543,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           destination.latitude!,
                           destination.longitude!,
                         ),
-                  onClear: () =>
-                      ref.read(destinationStationProvider.notifier).state = null,
+                  onClose: _clearDestination,
                   onDetails: () => context.pushNamed(
                     'station-detail',
                     pathParameters: {'id': destination.id},
@@ -397,6 +551,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   onNavigate: () => _openDirections(destination),
                   onArrived: () => _reportArrival(destination),
                 ),
+              Positioned(
+                right: 16,
+                bottom: destination != null ? 168 : 24,
+                child: _MapZoomControls(
+                  radiusLabel: formatRadiusKm(radiusKmForZoom(_zoom)),
+                  canZoomIn: _zoom < nearbyMaxZoom - 0.05,
+                  canZoomOut: _zoom > nearbyMinZoom + 0.05,
+                  onZoomIn: () => _nudgeZoom(nearbyZoomStep),
+                  onZoomOut: () => _nudgeZoom(-nearbyZoomStep),
+                  showLocation: destination == null,
+                  onNearest: () => _goToMyLocation(thenNearest: true),
+                  onMyLocation: () => _goToMyLocation(),
+                ),
+              ),
             ],
           );
         },
@@ -420,138 +588,263 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
         ),
       ),
-      floatingActionButton: destination == null
-          ? Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                FloatingActionButton.small(
-                  heroTag: 'nearest',
-                  backgroundColor: const Color(0xFF00C48C),
-                  onPressed: () => _goToMyLocation(thenNearest: true),
-                  tooltip: 'Nearest station',
-                  child: const Icon(Icons.near_me),
-                ),
-                const SizedBox(height: 12),
-                FloatingActionButton(
-                  heroTag: 'me',
-                  onPressed: () => _goToMyLocation(),
-                  tooltip: 'My location',
-                  child: const Icon(Icons.my_location),
-                ),
-              ],
-            )
-          : null,
     );
   }
 }
 
-class _DestinationCard extends StatelessWidget {
+class _MapZoomControls extends StatelessWidget {
+  final String radiusLabel;
+  final bool canZoomIn;
+  final bool canZoomOut;
+  final VoidCallback onZoomIn;
+  final VoidCallback onZoomOut;
+  final bool showLocation;
+  final VoidCallback onNearest;
+  final VoidCallback onMyLocation;
+
+  const _MapZoomControls({
+    required this.radiusLabel,
+    required this.canZoomIn,
+    required this.canZoomOut,
+    required this.onZoomIn,
+    required this.onZoomOut,
+    required this.showLocation,
+    required this.onNearest,
+    required this.onMyLocation,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FloatingActionButton.small(
+          heroTag: 'zoom-in',
+          tooltip: 'Zoom in',
+          onPressed: canZoomIn ? onZoomIn : null,
+          child: const Icon(Icons.add),
+        ),
+        const SizedBox(height: 6),
+        Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Text(
+              radiusLabel,
+              style: const TextStyle(
+                color: Color(0xFF111111),
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        FloatingActionButton.small(
+          heroTag: 'zoom-out',
+          tooltip: 'Zoom out',
+          onPressed: canZoomOut ? onZoomOut : null,
+          child: const Icon(Icons.remove),
+        ),
+        if (showLocation) ...[
+          const SizedBox(height: 12),
+          FloatingActionButton.small(
+            heroTag: 'nearest',
+            backgroundColor: const Color(0xFF00C48C),
+            onPressed: onNearest,
+            tooltip: 'Nearest station',
+            child: const Icon(Icons.near_me),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton(
+            heroTag: 'me',
+            onPressed: onMyLocation,
+            tooltip: 'My location',
+            child: const Icon(Icons.my_location),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _StationPeekCard extends StatefulWidget {
   final Station station;
   final double? distanceKm;
-  final VoidCallback onClear;
+  final VoidCallback onClose;
   final VoidCallback onDetails;
   final VoidCallback onNavigate;
   final VoidCallback onArrived;
 
-  const _DestinationCard({
+  const _StationPeekCard({
+    super.key,
     required this.station,
     required this.distanceKm,
-    required this.onClear,
+    required this.onClose,
     required this.onDetails,
     required this.onNavigate,
     required this.onArrived,
   });
 
   @override
+  State<_StationPeekCard> createState() => _StationPeekCardState();
+}
+
+class _StationPeekCardState extends State<_StationPeekCard> {
+  double _drag = 0;
+
+  void _onDragUpdate(DragUpdateDetails details) {
+    if (details.delta.dy <= 0 && _drag <= 0) return;
+    setState(() => _drag = (_drag + details.delta.dy).clamp(0, 280));
+  }
+
+  void _onDragEnd(DragEndDetails details) {
+    final fling = details.primaryVelocity ?? 0;
+    if (_drag > 56 || fling > 450) {
+      widget.onClose();
+      return;
+    }
+    setState(() => _drag = 0);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final station = widget.station;
     return Align(
       alignment: Alignment.bottomCenter,
-      child: Material(
-        color: Colors.white,
-        elevation: 8,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-          child: DefaultTextStyle(
-            style: const TextStyle(color: Color(0xFF111111), fontSize: 14),
-            child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.flag, color: Color(0xFFFF6B35)),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Destination',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: onClear,
-                    icon: const Icon(Icons.close, color: Color(0xFF111111)),
-                  ),
-                ],
-              ),
-              Text(
-                station.name,
-                style: const TextStyle(
-                  color: Color(0xFF111111),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(station.address),
-              if (station.operatorName != null)
-                Text(
-                  station.operatorName!,
-                  style: const TextStyle(color: Color(0xFF3A3A3C)),
-                ),
-              if (distanceKm != null) ...[
-                const SizedBox(height: 4),
-                Text('${distanceKm!.toStringAsFixed(1)} km from your location'),
-              ],
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: onDetails,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF111111),
-                        side: const BorderSide(color: Color(0xFF111111)),
-                      ),
-                      child: const Text('Details'),
+      child: Transform.translate(
+        offset: Offset(0, _drag),
+        child: GestureDetector(
+          onVerticalDragUpdate: _onDragUpdate,
+          onVerticalDragEnd: _onDragEnd,
+          child: Material(
+            color: Colors.white,
+            elevation: 10,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 6, 12, 16),
+              child: DefaultTextStyle(
+                style: const TextStyle(color: Color(0xFF111111), fontSize: 14),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: widget.onClose,
+                          tooltip: 'Close',
+                          icon: const Icon(Icons.close, color: Color(0xFF111111)),
+                        ),
+                        Expanded(
+                          child: Center(
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD0D7E2),
+                                borderRadius: BorderRadius.circular(99),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 48),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: onNavigate,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0066FF),
-                        foregroundColor: Colors.white,
+                    Text(
+                      station.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
-                      icon: const Icon(Icons.directions),
-                      label: const Text('Go'),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: onArrived,
-                  icon: const Icon(Icons.flag_circle),
-                  label: const Text("I've arrived — confirm status"),
+                    const SizedBox(height: 4),
+                    Text(
+                      station.address,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Color(0xFF3A3A3C)),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        if (station.countryCode != null)
+                          _PeekChip(station.countryCode!),
+                        if (station.operatorName != null)
+                          _PeekChip(station.operatorName!),
+                        _PeekChip('${station.connectorCount} connectors'),
+                        if (widget.distanceKm != null)
+                          _PeekChip(
+                            '${widget.distanceKm!.toStringAsFixed(1)} km',
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: widget.onDetails,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF111111),
+                              side: const BorderSide(color: Color(0xFF111111)),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            child: const Text('Details'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: widget.onNavigate,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0066FF),
+                              foregroundColor: Colors.white,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            icon: const Icon(Icons.directions, size: 18),
+                            label: const Text('Go'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          tooltip: "I've arrived",
+                          onPressed: widget.onArrived,
+                          icon: const Icon(Icons.flag_circle_outlined),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PeekChip extends StatelessWidget {
+  final String label;
+  const _PeekChip(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEEF6FF),
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 12, color: Color(0xFF111111)),
       ),
     );
   }
