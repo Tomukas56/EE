@@ -66,9 +66,14 @@ B. SAUGUMAS IR ATITIKTIS (prieš parduotuvę / gyvus pinigus)
 ================================================================================
 
 11. Cyber Resilience Act (ES 2024/2847)
-    Nėra: rizikos vertinimo, SBOM, CVD kontakto, 24h/72h pranešimų procedūros
-    (Art. 14 nuo 2026-09-11 produktams rinkoje), palaikymo laikotarpio, CE / ES
-    deklaracijos (nuo 2027-12-11). Negalima dėti į Play/App Store, kol nėra
+    Laboratorinis SBOM: docs/sbom/ (CycloneDX 1.6). Regeneruoti: ./scripts/generate-sbom.sh
+    CVE skenavimas įjungtas: ./scripts/scan-cve.sh (Snyk primary + OSV + npm audit).
+    Tokenas: SNYK_TOKEN backend/.env (gitignored), https://app.snyk.io/account
+    Paskutinis lab snapshot (OSV/npm): 0 OSV, 0 npm high/critical (po npm audit fix).
+    Snyk: paleisti ./scripts/scan-cve.sh su tokenu; ataskaitos docs/sbom/cve-snyk-*.json
+    Vis dar nėra: rizikos vertinimo, CI CVE vartų, CVD kontakto, 24h/72h pranešimų
+    procedūros (Art. 14 nuo 2026-09-11 produktams rinkoje), palaikymo laikotarpio,
+    CE / ES deklaracijos (nuo 2027-12-11). Negalima dėti į Play/App Store, kol nėra
     pranešimų žaidimo knygos.
 
 12. GDPR / BDAR

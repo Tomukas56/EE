@@ -19,11 +19,12 @@ Do **not** claim done: live Stripe/PCI, OCPI occupancy, iOS, CRA/CE, production 
 - Tablet: Samsung SM-T585 — `adb reverse tcp:3000 tcp:3000`
 
 ## Next work (priority)
-1. Laboratory QA on the tablet: Start/Stop, history, filters, vehicle, Vilnius→Riga trip
-2. Firebase SHA-1 + real Google Sign-In (then remove local bypass for store)
-3. Stripe Payment Sheet only after HTTPS + test key
-4. CRA Art. 14 playbook before any store listing
-5. Tests; DEMO.md still overstates readiness
+1. Put `SNYK_TOKEN` in `backend/.env` and run `./scripts/scan-cve.sh` (Snyk is the primary CVE gate)
+2. Laboratory QA on the tablet: Start/Stop, history, filters, vehicle, Vilnius→Riga trip
+3. Firebase SHA-1 + real Google Sign-In (then remove local bypass for store)
+4. Stripe Payment Sheet only after HTTPS + test key
+5. CRA Art. 14 playbook before any store listing
+6. Tests; DEMO.md still overstates readiness
 
 Crowd stations: pending until owner PIN (`APP_OWNER_PIN`, lab default `2468`) confirms physical location.
 

@@ -58,7 +58,7 @@ USB lab builds are **not** “placing on the market”. Listing the app on an EU
 | CRA essential requirement (Annex I Part I, summarised) | EE interpretation | Status 2026-09-01 |
 |--------------------------------------------------------|-------------------|-------------------|
 | Appropriate cybersecurity for intended use | Risk assessment documented; secure-by-design for map, account, later payments | **Gap** — no CRA risk assessment file |
-| No known exploitable vulnerabilities at delivery | Track CVEs in Flutter/Node/OS deps; patch before store | **Gap** — no SBOM, no release CVE gate |
+| No known exploitable vulnerabilities at delivery | Track CVEs in Flutter/Node/OS deps; patch before store | **Partial** — local Snyk + OSV + npm audit gate (`scripts/scan-cve.sh`); no CI / store attestation |
 | Secure by default | No debug bypass, no owner PIN, HTTPS, least privilege | **Gap (prod)** — lab PIN, cleartext HTTP, local session bypass |
 | Security updates during support period | Play/App Store updates; API patches; stated end-of-support date | **Gap** — no support-period statement |
 | Confidentiality (encryption in transit / at rest as needed) | TLS 1.2+ prod; DB encryption; no PAN | **Partial** — Prisma/ORM; TLS only in prod plan; session in SharedPreferences |
@@ -74,7 +74,7 @@ USB lab builds are **not** “placing on the market”. Listing the app on an EU
 
 | CRA essential requirement (Annex I Part II, summarised) | EE interpretation | Status |
 |---------------------------------------------------------|-------------------|--------|
-| Identify and document components and vulnerabilities | Machine-readable **SBOM** (app + backend); dependency scanning | **Gap** |
+| Identify and document components and vulnerabilities | Machine-readable **SBOM** (app + backend); dependency scanning | **Partial** — CycloneDX 1.6 in `docs/sbom/`; Snyk + OSV + npm audit locally; no CI |
 | Address and remediate without undue delay | Patch SLA (e.g. critical ≤ 7 days) | **Gap** |
 | Coordinated vulnerability disclosure (CVD) | Public security@ contact; policy on a website | **Gap** |
 | Share information on fixed issues | Release notes / advisory | **Gap** |
@@ -171,7 +171,7 @@ Lab-only: owner PIN (`X-Owner-Pin`), cleartext LAN API, debug Google Maps key. T
 | ID | Control | Required by | When | Status |
 |----|---------|-------------|------|--------|
 | C-01 | CRA cybersecurity risk assessment | CRA Art. 13, Annex I | Before market; living document | **Gap** |
-| C-02 | SBOM + third-party due diligence | CRA Annex I Part II | Before market | **Gap** |
+| C-02 | SBOM + third-party due diligence | CRA Annex I Part II | Before market | **Partial** — CycloneDX + `./scripts/scan-cve.sh` (Snyk high/critical + OSV + npm). No CI. |
 | C-03 | CVD policy + security contact | CRA Annex I Part II | Before market; needed for Art. 14 | **Gap** |
 | C-04 | Art. 14 24h/72h reporting to CSIRT + ENISA | CRA Art. 14 | **From 11 Sep 2026** for products **on the market** | **Gap** — do not list on stores until ready |
 | C-05 | Support period (≥ 5 years unless shorter use) published | CRA Art. 13 | At purchase / store listing | **Gap** |

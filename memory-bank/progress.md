@@ -10,6 +10,7 @@
 - Helmet, CORS
 - Stripe payment routes exist but are inert without a secret key
 - `npm run dev` = `tsx watch src/index.ts`
+- CVE lab gate: Snyk (`scripts/scan-cve.sh`) + OSV + npm audit; CycloneDX in `docs/sbom/`
 
 ### Mobile
 - Screens: welcome, vehicle (persisted), home, list + filters, detail with Start/Stop, Google Map, trip planner, charging/payment history from API

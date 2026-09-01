@@ -1,0 +1,5 @@
+# Snyk policy (https://docs.snyk.io/manage-risk/policies/the-.snyk-file)
+# Ignore a finding only with a written CRA due-diligence reason.
+version: v1.25.0
+ignore: {}
+patch: {}

@@ -1,0 +1,6 @@
+# OSV-Scanner config for Energy Eniwhere.
+# Ignore a CVE only with a written reason (CRA due diligence). Example:
+#
+# [[IgnoredVulns]]
+# id = "GHSA-xxxx"
+# reason = "Dev-only; not shipped in the store APK."

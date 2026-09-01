@@ -17,6 +17,7 @@
 - Root `.env`: Docker Compose DB vars (optional; live API uses Postgres.app on 5434, not Compose)
 - `backend/.env`: `DATABASE_URL` → `127.0.0.1:5434/energy_db`, user `energy_admin_secure`
 - `STRIPE_SECRET_KEY` empty — payment routes return 500 until a test key is added
+- `SNYK_TOKEN` in `backend/.env` for `./scripts/scan-cve.sh` (never commit; https://app.snyk.io/account)
 
 ## Flutter constraint
 `pubspec.yaml` originally required Dart `^3.10.3`. On this Mac it is relaxed to `>=3.8.0 <4.0.0` and `google_fonts` is pinned to `6.2.1`.
