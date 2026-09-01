@@ -9,8 +9,12 @@ dev-debug.log
 # Dependency directories
 node_modules/
 
-# Environment variables
+# Environment variables and secrets (never commit)
 .env
+**/.env
+backend/.env
+!.env.example
+!backend/.env.example
 
 # Editor directories and files
 .idea
