@@ -15,6 +15,10 @@ Kas JAU veikia (kad nesimaišytų su problemomis)
 - Istorija ir „mokėjimai“ rodo tas sesijas (lab-estimate), ne fiktyvius PAY001
 - Maršruto planavimas: Google Directions (jei raktas leidžia) arba Nominatim + atstumo įvertinimas; krovimo stotelė pagal automobilio nuotolį
 - npm run dev = tsx watch src/index.ts
+- Laboratorinis SBOM: docs/sbom/ (CycloneDX 1.6). CVE vartai: ./scripts/scan-cve.sh
+- Snyk CLI: `snyk auth` / `snyk whoami` → justusaleksu. SNYK_TOKEN nereikalingas
+- Nested `OneDrive - teltonika.lt/Documents/ENERGY` ištrinta iš GitHub `main` (nebesidubliuoja)
+- .env / backend/.env gitignored; SNYK_TOKEN iš backend/.env išimtas (lieka `snyk auth`)
 
 ================================================================================
 A. FUNKCIJOS (produktas)
@@ -66,14 +70,18 @@ B. SAUGUMAS IR ATITIKTIS (prieš parduotuvę / gyvus pinigus)
 ================================================================================
 
 11. Cyber Resilience Act (ES 2024/2847)
-    Laboratorinis SBOM: docs/sbom/ (CycloneDX 1.6). Regeneruoti: ./scripts/generate-sbom.sh
-    CVE skenavimas įjungtas: ./scripts/scan-cve.sh (Snyk primary + OSV + npm audit).
-    Snyk: `snyk auth` (OAuth). SNYK_TOKEN nebūtinas, kol `snyk whoami` veikia.
-    Paskutinis lab snapshot: Snyk (justusaleksu) 0 high/critical; 0 OSV; 0 npm high/critical.
-    Vis dar nėra: rizikos vertinimo, CI CVE vartų, CVD kontakto, 24h/72h pranešimų
-    procedūros (Art. 14 nuo 2026-09-11 produktams rinkoje), palaikymo laikotarpio,
-    CE / ES deklaracijos (nuo 2027-12-11). Negalima dėti į Play/App Store, kol nėra
-    pranešimų žaidimo knygos.
+    LABORATORIJA (C-02 dalinai): CycloneDX 1.6 — docs/sbom/ee-backend.cdx.json (181)
+    ir ee-mobile.cdx.json (136). Regeneruoti: ./scripts/generate-sbom.sh
+    CVE vartai: ./scripts/scan-cve.sh — Snyk (primary) + OSV + npm audit high/critical.
+    Snyk prisijungimas: `snyk auth` (OAuth). SNYK_TOKEN trinti galima; blogas tokenas
+    perrašydavo sesiją ir duodavo 401. `snyk whoami` turi rodyti justusaleksu.
+    Paskutinis lab snapshot (2026-09-01): Snyk 94 npm deps, 0 vulnerable paths;
+    Flutter SBOM test 0 high/critical; OSV 0; npm audit 0 high/critical.
+    Ataskaitos: docs/sbom/cve-snyk.md, cve-snyk-*.json, cve-osv.md
+    Tai NĖRA CE, store atestacija ar CI. Vis dar nėra: rizikos vertinimo, CI CVE
+    vartų, CVD kontakto, 24h/72h pranešimų procedūros (Art. 14 nuo 2026-09-11
+    produktams rinkoje), palaikymo laikotarpio, CE / ES deklaracijos (nuo 2027-12-11).
+    Negalima dėti į Play/App Store, kol nėra pranešimų žaidimo knygos.
 
 12. GDPR / BDAR
     Yra sutartis. Nėra: privatumo politikos, DSR (ištrynimas/prieiga), DPIA,
@@ -127,10 +135,12 @@ D. EILĖ (ką spręsti kokia tvarka)
 
 Dabar (lab QA, ne store):
   - Planšetėje: Start/Stop sesija, istorija, filtrai, automobilis, Vilnius→Riga maršrutas
+  - Snyk/OSV lab vartai jau žali — kartoti prieš release: ./scripts/scan-cve.sh
 
 Prieš Play/App Store:
-  - 5, 11 (CVD + Art. 14), 12, 14, 15, 16, 18
+  - 5, 11 (CVD + Art. 14 — SBOM/CVE snapshot neužtenka), 12, 14, 15, 16, 18
   - Išjungti PIN, HTTP, local session bypass
+  - CI CVE vartai (dabar tik lokaliai)
 
 Prieš pirmą tikrą mokėjimą:
   - 2, 19 (sesija jau lab lygiu; pinigai vis dar ne)
@@ -144,3 +154,4 @@ Nuorodos
 - docs/PRD.md §5–7
 - docs/specs/SECURITY_COMPLIANCE.md
 - docs/specs/SECURITY_AND_THREATS.md
+- docs/sbom/README.md
