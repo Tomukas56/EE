@@ -191,13 +191,7 @@
 
 ## 🎯 Current Status
 
-**Backend**: ✅ **Production-ready MVP**
-- All planned endpoints working
-- Database schema stable
-- Mock data loaded
-- Sync worker operational
-
-**Next Phase**: Flutter mobile application development
+**Backend + lab Flutter**: local developer MVP on USB Android. **Not** production-ready. Honest score: `memory-bank/progress.md` (~35–40% of full PRD).
 
 ---
 
@@ -214,10 +208,19 @@
 
 ---
 
-## 2026-08-31 — Local bring-up on macOS 13 (Ventura)
+## 2026-09-02 — Tablet map IA + Payments menu
+
+- Map: Google Maps; search match list; compact country/plug/kW icons on the **right** with `+` `−` / nearest / my location. Do not wrap GoogleMap in Listener.
+- Root tile **History** renamed **Payments** (subtitle Sessions · History). Wallet-not-linked banner on Payments.
+- Trip planner: map polyline + Navigate (Google Maps waypoint if charging stop).
+- Sign out closes the app; Skip Sign in → welcome.
+- Owner review copy: owner PIN inbox for crowd-marked stations.
+- Station catalogue is Open Charge Map (~2590), not 7 mock rows.
+
+---
 
 - Cloned/synced repo; nested `OneDrive - teltonika.lt/` duplicate was removed 2026-09-01.
-- Docker is not installed. Database runs on **Postgres.app 18.3, port 5434**, database `energy_db`.
+- Docker **Colima** is the lab engine. Live API database is Compose Postgres **port 5433** (`./scripts/db-up.sh`). Postgres.app is not required.
 - `backend/.env` uses `DATABASE_URL` (Prisma does not read `DB_HOST`/`DB_PORT` alone).
 - Stripe v20 throws if constructed with an empty key. `PaymentService` now lazily creates the client so station API can boot without `STRIPE_SECRET_KEY`.
 - `import 'dotenv/config'` is the first backend import so env is available under ESM.

@@ -1,6 +1,10 @@
 # Usage Scenarios - Energy Eniwhere
 
-This document outlines the core user flows and operating scenarios for the Energy Eniwhere mobile application, based on the Product Requirements Document (PRD).
+This document outlines the core user flows. **Target product** flows are below. The **lab build (2026-09-02)** uses this information architecture:
+
+Stations · Trip · **Payments** · Account. Map filters sit on the **right** with zoom. Trip planner has a map and **Navigate**. Sign out closes the app.
+
+---
 
 ## 1. User Onboarding & Vehicle Registration (First Time Use)
 **Goal**: Create an account and set up the mandatory vehicle profile to enable route planning.
@@ -33,7 +37,7 @@ This document outlines the core user flows and operating scenarios for the Energ
     *   Map shows the route line.
     *   **Stop 1**: "Ionity Station, 20 min charge (20% -> 80%)".
     *   **Summary**: "Total time: 4h 30m (Driving: 4h, Charging: 30m)".
-5.  **Navigation**: User taps "Start Navigation" to push coordinates to Google Maps/Waze.
+5.  **Navigation**: User taps **Navigate** to open Google Maps driving directions (with a waypoint if a charging stop was suggested).
 
 ## 3. Ad-hoc Charging (Nearest Station)
 **Goal**: Quickly find a place to charge nearby without a full route plan.
@@ -64,9 +68,10 @@ This document outlines the core user flows and operating scenarios for the Energ
     *   Charges the linked credit card automatically.
     *   Displays "Success! Receipt sent to email."
 
-## 5. Account & History
-**Goal**: Review past charges.
+## 5. Account & Payments history
+**Goal**: Review past charges and lab payment estimates.
 
-1.  **Access**: User taps "Profile" -> "History".
-2.  **List**: Shows list of past sessions with Date, Location, kWh, and Cost.
-3.  **Detail**: Tapping a session shows the PDF invoice.
+1.  **Access**: User taps **Payments** → Charging history or Payments.
+2.  **Wallet**: Payments screen states whether Google Wallet/Pay or Apple Wallet/Pay is linked on this device (lab: not linked).
+3.  **List**: Past sessions with date, location, kWh, and cost (lab-estimate until Stripe).
+4.  **Sign out** (Account): ends the session and closes the app. Skip users use **Sign in** to return to welcome.

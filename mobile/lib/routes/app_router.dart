@@ -52,8 +52,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'splash',
         builder: (context, state) => SplashScreen(
           onFinished: () {
-            final loggedIn = ref.read(sessionProvider) != null;
-            context.go(loggedIn ? '/home' : '/welcome');
+            final user = ref.read(sessionProvider);
+            final signedIn = user != null && !user.limitedAccess;
+            context.go(signedIn ? '/home' : '/welcome');
           },
         ),
       ),

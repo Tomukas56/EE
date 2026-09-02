@@ -27,6 +27,12 @@ class SessionNotifier extends StateNotifier<AppUser?> {
     return user;
   }
 
+  Future<AppUser> enterLabDevice() async {
+    final user = await _auth.enterLabDevice();
+    state = user;
+    return user;
+  }
+
   Future<void> signOut() async {
     await _auth.signOut();
     state = null;

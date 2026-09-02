@@ -1,6 +1,8 @@
 # Energy Eniwhere - Live Demo 🚀
 
-Complete walkthrough of the implemented mobile app showing all features.
+**Historical walkthrough.** Menu tiles, station counts, and “production-ready / 85%” claims in this file are **out of date**. Honest status: `memory-bank/progress.md`. Lab IA (2026-09-02): Stations · Trip · **Payments** · Account; map filters on the **right**; ~2590 OCM stations.
+
+Complete walkthrough of an early mock UI (kept for screenshots).
 
 ---
 

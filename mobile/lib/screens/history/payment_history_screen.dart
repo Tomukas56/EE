@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -108,6 +109,7 @@ class PaymentHistoryScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              _WalletBindingBanner(),
               Expanded(
                 child: payments.isEmpty
                     ? Center(
@@ -146,6 +148,44 @@ class PaymentHistoryScreen extends ConsumerWidget {
   }
 }
 
+class _WalletBindingBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    late final String title;
+    late final String body;
+    late final IconData icon;
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+      case TargetPlatform.macOS:
+        title = 'Apple Wallet / Apple Pay';
+        body =
+            'This device is not linked to Apple Wallet or Apple Pay. Lab receipts stay in the app only.';
+        icon = Icons.phone_iphone;
+      case TargetPlatform.android:
+        title = 'Google Wallet / Google Pay';
+        body =
+            'This Android device is not linked to Google Wallet or Google Pay. Lab receipts stay in the app only.';
+        icon = Icons.android;
+      default:
+        title = 'Device wallet';
+        body =
+            'No device wallet is linked in this lab build. Payments here are estimates, not card charges.';
+        icon = Icons.account_balance_wallet_outlined;
+    }
+    return Material(
+      color: const Color(0xFFEEF6FF),
+      child: ListTile(
+        leading: Icon(icon, color: const Color(0xFF0066FF)),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+        ),
+        subtitle: Text(body, style: const TextStyle(fontSize: 13, height: 1.3)),
+      ),
+    );
+  }
+}
+
 class _PaymentCard extends StatelessWidget {
   final PaymentRecord payment;
 
@@ -160,7 +200,7 @@ class _PaymentCard extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.successGreen.withOpacity(0.1),
+            color: AppColors.successGreen.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(Icons.check_circle, color: AppColors.successGreen),

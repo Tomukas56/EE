@@ -31,18 +31,30 @@ class AuthService {
   }
 
   Future<void> persistAgreementAccepted(bool accepted) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(agreementKey, accepted);
-    if (accepted) {
-      await prefs.setBool(skippedKey, false);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(agreementKey, accepted);
+      if (accepted) {
+        await prefs.setBool(skippedKey, false);
+      }
+    } catch (error) {
+      debugPrint('Could not persist agreement tick: $error');
     }
+  }
+
+  Future<AppUser> enterLabDevice() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(skippedKey, false);
+    await prefs.setBool(agreementKey, true);
+    await _persist(AppUser.labDevice);
+    return AppUser.labDevice;
   }
 
   Future<AppUser> enterSkippedGuest() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(skippedKey, true);
-    await prefs.setBool(agreementKey, false);
-    await _persist(AppUser.guest);
+    // Skip is a preview; it does not revoke a prior Terms tick.
+    await prefs.remove(_sessionKey);
     return AppUser.guest;
   }
 
@@ -61,7 +73,12 @@ class AuthService {
     final raw = prefs.getString(_sessionKey);
     if (raw == null || raw.isEmpty) return null;
     try {
-      return AppUser.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      final user = AppUser.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      if (user.limitedAccess) {
+        await prefs.remove(_sessionKey);
+        return null;
+      }
+      return user;
     } catch (_) {
       return null;
     }
@@ -88,15 +105,6 @@ class AuthService {
                 (error.message?.contains('10') ?? false)));
   }
 
-  static AuthException _developerError() {
-    return AuthException(
-      'Google ApiException 10: Firebase still has no Android OAuth client '
-      'for package com.eniwhere.energy. Add SHA-1 $debugSha1, enable '
-      'Authentication → Google, then replace android/app/google-services.json '
-      'with the newly downloaded file.',
-    );
-  }
-
   Future<AppUser> signInWithGoogle() async {
     try {
       final started = DateTime.now();
@@ -104,7 +112,11 @@ class AuthService {
       if (googleUser == null) {
         final elapsedMs = DateTime.now().difference(started).inMilliseconds;
         if (elapsedMs < 4000) {
-          throw _developerError();
+          debugPrint(
+            'Google Sign-In returned null in ${elapsedMs}ms (likely ApiException 10). '
+            'Lab session. Add Android SHA-1 $debugSha1 in Firebase when going to store.',
+          );
+          return enterLabDevice();
         }
         throw AuthException('Sign-in cancelled');
       }
@@ -131,12 +143,14 @@ class AuthService {
       await _persist(user);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(skippedKey, false);
+      await prefs.setBool(agreementKey, true);
       return user;
     } on AuthException {
       rethrow;
     } catch (error) {
       if (_isDeveloperError(error)) {
-        throw _developerError();
+        debugPrint('Google Play OAuth not configured: $error');
+        return enterLabDevice();
       }
       throw AuthException('Google Sign-In failed: $error');
     }

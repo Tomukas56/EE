@@ -35,26 +35,29 @@ Energy Eniwhere is a comprehensive mobile application for Electric Vehicle (EV) 
         *   Optimize for minimum travel time (Driving + Charging).
 *   **Output**:
     *   Visual route map with charging stops.
+    *   **Navigate** opens Google Maps driving directions (waypoint when a charging stop is suggested).
     *   Estimated total duration.
     *   Estimated charging cost.
     *   Energy consumption estimate.
 
 ### 2.4 Charging Station Discovery
 *   Real-time map and list of stations.
-*   Filter by connector, speed (kW), and availability.
-*   "Nearest Station" quick action.
+*   Filter by country, connector, speed (kW), and (when available) occupancy.
+*   Map chrome (lab, approved 2026-09-02): search at the top with a **list of name/address matches**; compact **country / plug / kW** icons on the **right**, same column as zoom `+` `−`, nearest, and my location. Google Maps is the basemap.
+*   "Nearest Station" quick action (same map, centered on the device).
 *   **Mark a new station**: a driver can pin a missing column. The pin is **not** shown on the public map until the **app owner confirms the physical location**.
 *   **Arrival check**: when the driver arrives, the app asks (Yes / No / Dismiss): is the station working? are there free connectors?
 
 ### 2.5 Charging Session Control
 *   Start/Stop charging via app.
 *   Real-time monitoring (kWh delivered, current cost).
-*   History of sessions.
+*   History of sessions under the **Payments** root tile (subtitle: Sessions · History), not a tile named History.
 
 ### 2.6 Payments
-*   Wallet system (Stripe/Payment Gateway).
-*   Automatic payments after session.
+*   Wallet system (Stripe/Payment Gateway) — **target**.
+*   Automatic payments after session — **target**.
 *   Payment history and invoices.
+*   Lab: show whether this **device wallet** is linked (Google Wallet / Google Pay on Android, Apple Wallet / Apple Pay on iOS). Lab builds are **not linked**; receipts stay in-app.
 
 ## 3. Technical Constraints
 *   **Platform**: Flutter (iOS/Android/Web).
@@ -228,3 +231,19 @@ Use **Stripe + Apple Pay + Google Pay** as the Wallet integration. Do not store 
 * Entry: destination card **I've arrived**, station detail, or automatic prompt within ~120 m of the chosen station.
 * Questions: station working? free connectors? Each: **Yes / No / Dismiss**.
 * Stored as `site_check_in`. These are observations, not live CPO occupancy.
+
+---
+
+## 9. Lab information architecture (2026-09-02)
+
+Root menu (English UI): **Stations** · **Trip** · **Payments** · **Account**.
+
+| Tile | Submenu | Lab notes |
+|------|---------|-----------|
+| Stations | Map of stations, Nearest column, Station list, Mark a new station | Map chrome in §2.4. Skip mode: map only. |
+| Trip | Trip with charging, My vehicle | Planner shows a map polyline and **Navigate**. |
+| Payments | Charging history, Payments | Former “History” tile. Payments lists lab estimates + wallet-not-linked banner. |
+| Account | Signed in, Legal & privacy, Owner review, Sign out | Owner review = PIN inbox for crowd marks. **Sign out** ends the session and closes the app. Skip **Sign in** returns to welcome only. |
+
+Tablet QA (SM-T585): map layout approved. Completeness vs this PRD remains ~35–40% — see `memory-bank/progress.md`.
+

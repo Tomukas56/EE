@@ -12,6 +12,13 @@ class AppUser {
     displayName: 'Skip — map only',
   );
 
+  /// Full lab session when Google Play OAuth is not configured yet.
+  static const labDevice = AppUser(
+    id: 'lab-device',
+    email: 'lab@device',
+    displayName: 'Google (this device)',
+  );
+
   bool get limitedAccess => id == guest.id;
 
   final String id;

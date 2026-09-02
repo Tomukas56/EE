@@ -1,6 +1,6 @@
 # Lab demo notes (historical)
 
-Early lab snapshot. This is not a production-readiness claim. Current setup is in `README.md`.
+Early snapshot with **7 mock stations**. Current catalogue is Open Charge Map (~2590). Current setup: `README.md`. Menu is Stations · Trip · **Payments** · Account.
 
 ## Backend API — live lab data
 

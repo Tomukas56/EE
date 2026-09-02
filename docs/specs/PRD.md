@@ -24,30 +24,27 @@ The "Energy Eniwhere" application will allow users to view, filter, and navigate
 -   **UI**: User Interface
 -   **MVP**: Minimum Viable Product
 
-### 1.4 Implementation Status (As of 2025-12-08)
+### 1.4 Implementation Status (As of 2026-09-02)
 
-**✅ Completed - Backend MVP**
-- Database schema with Prisma ORM (migrated from TypeORM)
-- Mock CPO service with 7 Lithuanian stations
-- Sync worker with cron scheduling
-- REST API endpoints: `GET /`, `GET /api/stations`, `GET /api/stations/:id`
-- PostgreSQL database on Docker
+**Lab (USB Android, not a store build)**
+- PostgreSQL via Colima Compose on host port **5433**; Open Charge Map sync LT/LV/EE/PL (~2590 mappable stations)
+- REST: stations, lab sessions start/stop, account erase, crowd submit / owner confirm
+- Flutter: welcome, map (Google Maps + right-side filter/zoom rail + search match list), list, trip map + Navigate, Payments menu, owner review
+- Occupancy UNKNOWN; payments = lab-estimate; Google Sign-In needs Firebase SHA-1
 
-**🚧 In Progress**
-- Flutter mobile application
+**✅ Completed — Phase-1 stations API**
+- Prisma schema, Express API, SyncWorker
 
-**📋 Planned**
-- Real CPO integrations (OCPI protocol)
-- User authentication (JWT)
-- Charging session control
-- Payment processing
-- Geospatial filtering
+**🚧 In progress**
+- Store-ready auth, Stripe Payment Sheet, OCPI occupancy
+
+**📋 Still planned**
+- Real CPO integrations (OCPI), User JWT, iOS, production HTTPS, CRA/CE
+
+**Honest completeness:** ~35–40% of the full product PRD. See [docs/PRD.md](../PRD.md) §6 and `memory-bank/progress.md`.
 
 **🔄 Implementation Changes**
-See [memory-bank.md](../../memory-bank.md) for detailed change log including:
-- Migration from TypeORM to Prisma ORM
-- PostGIS → Simple lat/lng columns
-- Database port change (5432 → 5433)
+See [memory-bank.md](../memory-bank.md) and `memory-bank/` for the change log (Prisma, port 5433, lab map IA).
 
 
 ## 2. Product Overview
@@ -85,7 +82,9 @@ User location (GPS), Search query, Filters.
 #### 3.2.3 Processing
 Query local database for station locations (Hybrid Strategy). Fetch real-time availability from CPOs only for visible stations.
 #### 3.2.4 Outputs
-Map pins indicating station location and status (Available, Occupied, Out of Order).
+Map pins indicating station location. Lab occupancy is UNKNOWN until OCPI.
+Search on the map shall list matching stations (name and address), not jump to a single hit.
+Map controls: compact country / plug / min-kW icons on the **same side** as zoom and my-location (right). Google Maps SDK is the lab basemap.
 
 ### 3.2.a Data Synchronization Strategy (Hybrid Model)
 **Requirement**: To ensure performance and reliability, the system shall operate on a Hybrid Data Model.
@@ -113,7 +112,7 @@ Retrieve real-time details from CPO API.
 #### 3.4.1 Description
 Allow users to narrow down search results.
 #### 3.4.2 Inputs
-Filter criteria: Connector type, Minimum power (kW), Specific providers, Availability.
+Filter criteria: Country (LT/LV/EE/PL), connector type, minimum power (kW), search text. Availability when a CPO feed exists.
 #### 3.4.3 Processing
 Filter displayed stations on map and list.
 #### 3.4.4 Outputs
@@ -137,7 +136,8 @@ Payment method (Credit Card, Apple Pay, Google Pay), Billing details.
 #### 3.6.3 Processing
 Authorize payment, process transaction upon session completion, generate invoice.
 #### 3.6.4 Outputs
-Payment confirmation, Transaction history, Invoices.
+Payment confirmation, transaction history, invoices.
+Lab: Payments root menu (Sessions · History). Screen must show device wallet binding status (Google Wallet/Pay vs Apple Wallet/Pay); lab devices are not linked.
 
 ### 3.7 Mark a new station
 A signed-in driver may submit a pin + metadata. The station is unpublished until the app owner confirms the physical location, then it appears on the map.

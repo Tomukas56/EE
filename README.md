@@ -1,5 +1,5 @@
-- **Data**: Mock CPO service (7 Lithuanian stations)
-- **Sync**: Cron worker (daily at 2 AM)
+- **Data**: Open Charge Map POIs for LT/LV/EE/PL (~2590 mappable in lab)
+- **Sync**: Cron worker (daily at 2 AM) + on boot
 
 ### Database Schema
 ```prisma
@@ -28,10 +28,11 @@ model Connector {
 }
 ```
 
-### Frontend (Planned)
-- **Framework**: Flutter
-- **Maps**: Google Maps / Mapbox
-- **State**: Provider / Riverpod
+### Frontend (lab)
+- **Framework**: Flutter **3.32.8** / Dart 3.8.1 (do not upgrade on macOS 13)
+- **Maps**: Google Maps SDK; OSM fallback only if Maps never attaches
+- **State**: Riverpod
+- **Device**: Samsung SM-T585 — `adb reverse tcp:3000 tcp:3000` then `flutter run -d 330039b62585a5df`
 
 ## 🚀 Getting Started
 
@@ -48,9 +49,20 @@ git clone https://github.com/Tomukas56/EE.git
 cd EE
 ```
 
-2. **Start PostgreSQL**
+2. **Start PostgreSQL** (host port **5433**)
+
+On this lab Mac, Colima provides Docker. From the repo root:
+
 ```bash
-docker-compose up -d
+./scripts/db-up.sh
+```
+
+That starts Colima if needed and `docker compose up -d db`. The API uses this container on port 5433. Postgres.app is not required.
+
+Elsewhere with Docker Desktop:
+
+```bash
+docker compose up -d
 ```
 
 3. **Install dependencies**
@@ -69,7 +81,7 @@ NODE_ENV=development
 
 5. **Run database migrations**
 ```bash
-npx prisma migrate dev
+npx prisma migrate deploy
 ```
 
 6. **Build and start server**
@@ -192,25 +204,19 @@ npx prisma migrate reset
 npm test
 ```
 
-## 📊 Mock Data
+## 📊 Station catalogue
 
-Currently loads 7 charging stations:
-1. **Ignitis Charging Hub** - Vilnius Center
-2. **Elinta Fast Charge** - Kaunas
-3. **Maxima Shopping Center** - Vilnius Ozas
-4. **Tesla Supercharger** - Vilnius
-5. **Ignitis Green Energy Hub** - Vilnius Žirmūnai
-6. **Elinta Downtown** - Kaunas Laisvės
-7. **LIDL Parking** - Vilnius Ukmergė
+Lab database is filled from **Open Charge Map**, not the original 7 mock rows. After sync expect on the order of **~2590** mappable stations (Lithuania, Latvia, Estonia, Poland). Occupancy is UNKNOWN until a CPO/OCPI feed exists.
 
-Total: **13 connectors** with various types and power levels.
+Root menu: Stations · Trip · **Payments** · Account. Map filters (country / plug / kW) sit on the **right** with zoom.
 
 ## 🔐 Security & Compliance
 
-- **GDPR**: No personal data stored yet
-- **Database**: Strong passwords, non-default ports
-- **API**: Helmet.js security headers, CORS enabled
-- **Future**: JWT authentication, rate limiting
+Lab only. See `docs/PRD.md` §6. Not GDPR-certified, not PCI, not a store build.
+
+- **API**: Helmet.js, CORS; cleartext HTTP on the LAN
+- **Auth**: Google Sign-In attempted; lab-device fallback until Firebase SHA-1
+- **Future**: JWT, TLS 1.3, Stripe Payment Sheet, CRA Art. 14
 
 ## 🛣️ Roadmap
 
@@ -220,17 +226,19 @@ Total: **13 connectors** with various types and power levels.
 - [x] Sync worker
 - [x] REST API endpoints
 
-### Phase 2: Mobile App (In Progress)
-- [ ] Flutter project setup
-- [ ] Google Maps integration
-- [ ] Station list & detail screens
-- [ ] Backend API integration
+### Phase 2: Mobile App (lab on Android tablet)
+- [x] Flutter project setup
+- [x] Google Maps integration (right-side filter/zoom rail)
+- [x] Station list & detail screens
+- [x] Backend API integration
+- [ ] Store-ready Google Sign-In (Firebase SHA-1)
+- [ ] iOS
 
 ### Phase 3: Advanced Features
 - [ ] Real CPO integrations (OCPI protocol)
-- [ ] User authentication
-- [] Charging session control
-- [ ] In-app payments (Stripe)
+- [ ] User JWT
+- [x] Charging session control (lab estimate, not CPO)
+- [ ] In-app payments (Stripe + wallets)
 - [ ] Push notifications
 
 ## 📝 License

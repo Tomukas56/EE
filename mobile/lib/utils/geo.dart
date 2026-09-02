@@ -120,6 +120,47 @@ List<Station> stationsWithin(
       .toList();
 }
 
+bool stationMatchesQuery(Station station, String query) {
+  final q = query.trim().toLowerCase();
+  if (q.isEmpty) return false;
+  final hay = [
+    station.name,
+    station.address,
+    station.operatorName ?? '',
+    station.countryCode ?? '',
+  ].join(' ').toLowerCase();
+  if (hay.contains(q)) return true;
+  if (q.length >= 4) {
+    final stem = q.substring(0, q.length - 1);
+    if (hay.contains(stem)) return true;
+  }
+  return hay.split(RegExp(r'[^a-z0-9]+')).any((word) => word.startsWith(q));
+}
+
+List<Station> stationsMatchingQuery(
+  List<Station> stations,
+  String query, {
+  int limit = 20,
+}) {
+  final q = query.trim().toLowerCase();
+  if (q.length < 2) return const [];
+  final hits = stations.where(hasCoordinates).where((station) {
+    return stationMatchesQuery(station, q);
+  }).toList();
+  int score(Station station) {
+    final name = station.name.toLowerCase();
+    final address = station.address.toLowerCase();
+    if (name.startsWith(q) || address.startsWith(q)) return 0;
+    if (name.contains(q)) return 1;
+    if (address.contains(q)) return 2;
+    return 3;
+  }
+
+  hits.sort((a, b) => score(a).compareTo(score(b)));
+  if (hits.length <= limit) return hits;
+  return hits.sublist(0, limit);
+}
+
 List<Station> stationsNear(
   List<Station> stations,
   double latitude,

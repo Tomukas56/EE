@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme.dart';
 import '../../providers/stations_provider.dart';
-import '../../services/api_service.dart';
 
 class OwnerReviewScreen extends ConsumerStatefulWidget {
   const OwnerReviewScreen({super.key});
@@ -126,8 +125,10 @@ class _OwnerReviewScreenState extends ConsumerState<OwnerReviewScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'Only the app owner can confirm a physical location. Enter the owner PIN.',
-            style: TextStyle(fontSize: 15, height: 1.35),
+            'This screen is only for the app owner — not for drivers.\n\n'
+            'When someone uses “Mark a new station”, that pin is hidden from the public map until you confirm it is a real column at that address.\n\n'
+            'Enter the owner PIN to open the inbox. Confirm publishes the station. Reject discards it.',
+            style: TextStyle(fontSize: 15, height: 1.4),
           ),
           const SizedBox(height: 16),
           TextField(
@@ -160,76 +161,121 @@ class _OwnerReviewScreenState extends ConsumerState<OwnerReviewScreen> {
   }
 
   Widget _inbox() {
+    final header = Material(
+      color: const Color(0xFFEEF6FF),
+      child: const Padding(
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: Text(
+          'Owner inbox. These crowd marks are not on the public map yet. '
+          'Confirm only after you are sure the physical column is there. '
+          'Confirm publishes it for every driver. Reject keeps it hidden.',
+          style: TextStyle(fontSize: 13, height: 1.35),
+        ),
+      ),
+    );
     if (_busy && _rows.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_rows.isEmpty) {
-      return Center(
-        child: Text(_error ?? 'No pending stations.'),
+      return Column(
+        children: [
+          header,
+          const Expanded(child: Center(child: CircularProgressIndicator())),
+        ],
       );
     }
-    return RefreshIndicator(
-      onRefresh: () => _load(_savedPin!),
-      child: ListView.separated(
-        padding: const EdgeInsets.all(12),
-        itemCount: _rows.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          final row = _rows[index];
-          return Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    row['name'] as String? ?? 'Station',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Text(row['address'] as String? ?? ''),
-                  if (row['operator_name'] != null)
-                    Text('Operator: ${row['operator_name']}'),
-                  if (row['connector_note'] != null)
-                    Text('Connectors: ${row['connector_note']}'),
-                  Text(
-                    '${row['latitude']}, ${row['longitude']}',
-                    style: const TextStyle(color: Color(0xFF3A3A3C), fontSize: 12),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _busy
-                              ? null
-                              : () => _reject(row['id'] as String),
-                          child: const Text('Reject'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _busy
-                              ? null
-                              : () => _confirm(row['id'] as String),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF00C48C),
-                            foregroundColor: Colors.white,
-                          ),
-                          child: const Text('Confirm location'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+    if (_rows.isEmpty) {
+      return Column(
+        children: [
+          header,
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  _error ?? 'No pending crowd-marked stations.',
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
-          );
-        },
-      ),
+          ),
+        ],
+      );
+    }
+    return Column(
+      children: [
+        header,
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(_error!, style: const TextStyle(color: Color(0xFFFF3B30))),
+          ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () => _load(_savedPin!),
+            child: ListView.separated(
+              padding: const EdgeInsets.all(12),
+              itemCount: _rows.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final row = _rows[index];
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          row['name'] as String? ?? 'Station',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(row['address'] as String? ?? ''),
+                        if (row['operator_name'] != null)
+                          Text('Operator: ${row['operator_name']}'),
+                        if (row['connector_note'] != null)
+                          Text('Connectors: ${row['connector_note']}'),
+                        Text(
+                          '${row['latitude']}, ${row['longitude']}',
+                          style: const TextStyle(
+                            color: Color(0xFF3A3A3C),
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: _busy
+                                    ? null
+                                    : () => _reject(row['id'] as String),
+                                child: const Text('Reject'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: _busy
+                                    ? null
+                                    : () => _confirm(row['id'] as String),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF00C48C),
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text('Confirm location'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -78,7 +78,7 @@
 
 ### 4.1 How payments exist in code
 
-They are **not live**. There is no `Payment` / `ChargingSession` table. Backend `POST /api/payments/*` wraps Stripe (`PaymentIntent`, customer, attach method) and is **unauthenticated**. `STRIPE_SECRET_KEY` is empty, so every call fails. Flutter has `flutter_stripe` / `pay` in pubspec and a `PaymentService` pointed at `localhost:3000`, but **no screen calls them**. History screens show three hard-coded mock rows.
+They are **not live Stripe charges**. The lab **does** persist `charging_session` rows (energy × €0.32/kWh, `payment_method: lab-estimate`). `POST /api/payments/*` still wraps Stripe and fails without `STRIPE_SECRET_KEY`. Flutter Payments screens list those lab estimates and show that the **device wallet is not linked**. No Payment Sheet yet.
 
 **Target when money goes live:** session end → PaymentIntent → Stripe Payment Sheet (Apple Pay / Google Pay) → webhook `payment_intent.succeeded`. Card numbers never touch EE (PCI **SAQ A**). SCA is Stripe + wallet, not EE as a payment institution.
 

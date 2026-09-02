@@ -102,13 +102,27 @@ class _LegalAccountScreenState extends ConsumerState<LegalAccountScreen> {
               child: const Padding(
                 padding: EdgeInsets.all(12),
                 child: Text(
-                  'You skipped the Terms. Skip is not consent. '
-                  'Sign out from the menu, then tick the box and continue with Google to unlock the rest of the app.',
+                  'You have not accepted the Terms yet. Skip is only a map preview for this session.',
                   style: TextStyle(fontSize: 13, height: 1.35),
                 ),
               ),
             ),
             const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: () =>
+                    ref.read(sessionProvider.notifier).signOut(),
+                icon: const Icon(Icons.login),
+                label: const Text('Sign in'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0066FF),
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
           ],
           LegalDocumentCard(
             title: ServiceAgreement.title,
@@ -124,37 +138,39 @@ class _LegalAccountScreenState extends ConsumerState<LegalAccountScreen> {
           ),
           const SizedBox(height: 12),
           _ThirdPartyCard(onOpen: _open),
-          const SizedBox(height: 24),
-          const Text(
-            'Delete all my data',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Erasure covers this device and lab server rows for your reporter id (GDPR Art. 17). '
-            'It does not close your Google account.',
-            style: TextStyle(fontSize: 13, height: 1.35, color: Color(0xFF3A3A3C)),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton.icon(
-              onPressed: _busy ? null : _confirmDelete,
-              icon: _busy
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(Icons.delete_forever),
-              label: Text(_busy ? 'Deleting…' : 'Delete all my data'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF3B30),
-                foregroundColor: Colors.white,
+          if (!limited) ...[
+            const SizedBox(height: 24),
+            const Text(
+              'Delete all my data',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Erasure covers this device and lab server rows for your reporter id (GDPR Art. 17). '
+              'It does not close your Google account.',
+              style: TextStyle(fontSize: 13, height: 1.35, color: Color(0xFF3A3A3C)),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: _busy ? null : _confirmDelete,
+                icon: _busy
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.delete_forever),
+                label: Text(_busy ? 'Deleting…' : 'Delete all my data'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF3B30),
+                  foregroundColor: Colors.white,
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

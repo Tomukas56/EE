@@ -1,6 +1,6 @@
 # Energy Eniwhere — implementation review
 
-Historical lab notes from the first backend slice. Current lab status is in `README.md` and `docs/specs/SECURITY_COMPLIANCE.md`.
+Historical lab notes from the first backend slice (7 mock stations). Current lab status: `README.md`, `docs/PRD.md` §9, `memory-bank/progress.md`.
 
 ## Completed at the time
 

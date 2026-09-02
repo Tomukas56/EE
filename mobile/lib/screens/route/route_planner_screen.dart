@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme.dart';
 import '../../models/station.dart';
 import '../../providers/stations_provider.dart';
@@ -17,15 +20,18 @@ class RoutePlannerScreen extends ConsumerStatefulWidget {
 class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
   final TextEditingController _startController = TextEditingController();
   final TextEditingController _endController = TextEditingController();
+  final MapController _mapController = MapController();
   final _routeService = RouteService();
   PlannedRoute? _route;
   bool _loading = false;
   String? _error;
+  bool _mapReady = false;
 
   @override
   void dispose() {
     _startController.dispose();
     _endController.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
@@ -34,6 +40,26 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
     final minutes = d.inMinutes.remainder(60);
     if (hours == 0) return '${minutes}m';
     return '${hours}h ${minutes}m';
+  }
+
+  List<LatLng> _pathPoints(PlannedRoute route) {
+    return [
+      for (final point in route.path) LatLng(point.lat, point.lng),
+    ];
+  }
+
+  void _fitRoute(PlannedRoute route) {
+    final points = _pathPoints(route);
+    if (points.isEmpty || !_mapReady) return;
+    try {
+      _mapController.fitCamera(
+        CameraFit.coordinates(
+          coordinates: points,
+          padding: const EdgeInsets.all(40),
+          maxZoom: 12,
+        ),
+      );
+    } catch (_) {}
   }
 
   Future<void> _calculateRoute() async {
@@ -56,6 +82,9 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
         _route = route;
         _loading = false;
       });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fitRoute(route);
+      });
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -64,6 +93,23 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
         _route = null;
       });
     }
+  }
+
+  Future<void> _openNavigate(PlannedRoute route) async {
+    final origin = '${route.origin.lat},${route.origin.lng}';
+    final destination = '${route.destination.lat},${route.destination.lng}';
+    final stop = route.chargingStop;
+    final waypoint = stop != null &&
+            stop.latitude != null &&
+            stop.longitude != null
+        ? '${stop.latitude},${stop.longitude}'
+        : null;
+    final url = Uri.parse(
+      waypoint == null
+          ? 'https://www.google.com/maps/dir/?api=1&origin=$origin&destination=$destination&travelmode=driving'
+          : 'https://www.google.com/maps/dir/?api=1&origin=$origin&destination=$destination&waypoints=$waypoint&travelmode=driving',
+    );
+    await launchUrl(url, mode: LaunchMode.externalApplication);
   }
 
   @override
@@ -81,7 +127,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
               color: Theme.of(context).cardColor,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 5),
                 ),
@@ -91,6 +137,8 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
               children: [
                 TextField(
                   controller: _startController,
+                  textInputAction: TextInputAction.next,
+                  onTapOutside: (_) => FocusScope.of(context).unfocus(),
                   decoration: const InputDecoration(
                     labelText: 'Start Location',
                     hintText: 'e.g. Vilnius',
@@ -100,6 +148,9 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: _endController,
+                  textInputAction: TextInputAction.search,
+                  onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                  onSubmitted: (_) => _calculateRoute(),
                   decoration: const InputDecoration(
                     labelText: 'Destination',
                     hintText: 'e.g. Riga',
@@ -127,39 +178,47 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
               ],
             ),
           ),
-          Expanded(
-            child: Container(
-              color: Theme.of(context).colorScheme.surface,
-              width: double.infinity,
-              child: _buildResult(context, route),
-            ),
-          ),
+          Expanded(child: _buildResult(context, route)),
           if (route != null)
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               color: Theme.of(context).scaffoldBackgroundColor,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+              child: Column(
                 children: [
-                  _TripStat(
-                    icon: Icons.timer,
-                    value: _formatDuration(route.duration),
-                    label: 'Duration',
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _openNavigate(route),
+                      icon: const Icon(Icons.navigation),
+                      label: const Text('Navigate'),
+                    ),
                   ),
-                  _TripStat(
-                    icon: Icons.ev_station,
-                    value: route.chargingStop == null ? '0 stops' : '1 stop',
-                    label: 'Charging',
-                  ),
-                  _TripStat(
-                    icon: Icons.bolt,
-                    value: '${route.energyKwh.toStringAsFixed(0)} kWh',
-                    label: 'Energy',
-                  ),
-                  _TripStat(
-                    icon: Icons.euro,
-                    value: '€${route.estimatedCostEur.toStringAsFixed(2)}',
-                    label: 'Est. Cost',
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _TripStat(
+                        icon: Icons.timer,
+                        value: _formatDuration(route.duration),
+                        label: 'Duration',
+                      ),
+                      _TripStat(
+                        icon: Icons.ev_station,
+                        value: route.chargingStop == null ? '0 stops' : '1 stop',
+                        label: 'Charging',
+                      ),
+                      _TripStat(
+                        icon: Icons.bolt,
+                        value: '${route.energyKwh.toStringAsFixed(0)} kWh',
+                        label: 'Energy',
+                      ),
+                      _TripStat(
+                        icon: Icons.euro,
+                        value: '€${route.estimatedCostEur.toStringAsFixed(2)}',
+                        label: 'Est. Cost',
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -198,26 +257,108 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
               fontSize: 16,
             ),
           ),
+          const SizedBox(height: 8),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              'A map and a Navigate button will appear after the route is calculated. Navigate opens Google Maps driving directions.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Color(0xFF3A3A3C), fontSize: 13, height: 1.35),
+            ),
+          ),
         ],
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(20),
+    final points = _pathPoints(route);
+    final stop = route.chargingStop;
+    return Column(
       children: [
-        Text(
-          '${route.distanceKm.toStringAsFixed(0)} km'
-          '${route.usedGoogleDirections ? ' (Google Directions)' : ' (estimate)'}',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+        Expanded(
+          child: FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: points.isEmpty
+                  ? const LatLng(55.2, 24.0)
+                  : points[points.length ~/ 2],
+              initialZoom: 6.5,
+              onMapReady: () {
+                _mapReady = true;
+                _fitRoute(route);
+              },
+            ),
+            children: [
+              TileLayer(
+                urlTemplate:
+                    'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                userAgentPackageName: 'lt.energyeniwhere.mobile',
+                retinaMode: true,
               ),
+              if (points.length >= 2)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: points,
+                      color: const Color(0xFF0066FF),
+                      strokeWidth: 4,
+                    ),
+                  ],
+                ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: LatLng(route.origin.lat, route.origin.lng),
+                    width: 40,
+                    height: 40,
+                    child: const Icon(Icons.trip_origin, color: Color(0xFF00C48C)),
+                  ),
+                  if (stop != null &&
+                      stop.latitude != null &&
+                      stop.longitude != null)
+                    Marker(
+                      point: LatLng(stop.latitude!, stop.longitude!),
+                      width: 40,
+                      height: 40,
+                      child: const Icon(Icons.ev_station, color: Color(0xFFFF6B35)),
+                    ),
+                  Marker(
+                    point: LatLng(route.destination.lat, route.destination.lng),
+                    width: 40,
+                    height: 40,
+                    child: const Icon(Icons.flag, color: Color(0xFF0066FF)),
+                  ),
+                ],
+              ),
+              const RichAttributionWidget(
+                alignment: AttributionAlignment.bottomLeft,
+                attributions: [
+                  TextSourceAttribution('© OpenStreetMap, © CARTO'),
+                ],
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 8),
-        Text(route.summary),
-        if (route.chargingStop != null) ...[
-          const SizedBox(height: 16),
-          _StopCard(station: route.chargingStop!),
-        ],
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                '${route.distanceKm.toStringAsFixed(0)} km'
+                '${route.usedGoogleDirections ? ' (Google Directions)' : ' (estimate)'}',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 4),
+              Text(route.summary),
+              if (stop != null) ...[
+                const SizedBox(height: 8),
+                _StopCard(station: stop),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -231,7 +372,9 @@ class _StopCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      margin: EdgeInsets.zero,
       child: ListTile(
+        dense: true,
         leading: const Icon(Icons.ev_station),
         title: Text(station.name),
         subtitle: Text(
@@ -241,6 +384,8 @@ class _StopCard extends StatelessWidget {
               '${station.maxPowerKw.toStringAsFixed(0)} kW',
             ...station.connectorTypes,
           ].join(' · '),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
         onTap: () => context.pushNamed(
           'station-detail',

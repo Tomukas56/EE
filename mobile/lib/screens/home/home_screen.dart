@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
@@ -21,7 +22,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Skip mode: only Map of stations works. Sign out and accept the Terms to unlock the rest.',
+            'Skip mode: only the map works this time. Sign in from Account to accept the Terms.',
           ),
         ),
       );
@@ -112,9 +113,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
       _MenuItem(
-        title: 'History',
-        subtitle: 'Sessions · Payments',
-        icon: Icons.history,
+        title: 'Payments',
+        subtitle: 'Sessions · History',
+        icon: Icons.payments,
         gradient: const LinearGradient(
           colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
         ),
@@ -146,7 +147,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _MenuItem(
         title: 'Account',
         subtitle: limited
-            ? 'Legal · Sign out'
+            ? 'Legal · Sign in'
             : 'Profile · Legal · Owner · Sign out',
         icon: Icons.person,
         gradient: const LinearGradient(
@@ -154,8 +155,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         children: [
           _MenuItem(
-            title: 'Signed in',
-            subtitle: ref.read(sessionProvider)?.label ?? 'This device',
+            title: limited ? 'Not signed in' : 'Signed in',
+            subtitle: limited
+                ? 'Skip — map only this time'
+                : (ref.read(sessionProvider)?.label ?? 'This device'),
             icon: Icons.badge_outlined,
             gradient: const LinearGradient(
               colors: [Color(0xFF3A3A3C), Color(0xFF636366)],
@@ -163,31 +166,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           _MenuItem(
             title: 'Legal & privacy',
-            subtitle: 'Terms, privacy, delete my data',
+            subtitle: limited ? 'Read the Terms' : 'Terms and privacy',
             icon: Icons.gavel,
             gradient: const LinearGradient(
               colors: [Color(0xFF0066FF), Color(0xFF00C48C)],
             ),
             onTap: () => context.pushNamed('legal'),
           ),
-          _MenuItem(
-            title: 'Owner review',
-            subtitle: 'Confirm a physical location',
-            icon: Icons.verified_user,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF0066FF), Color(0xFF7B61FF)],
+          if (!limited)
+            _MenuItem(
+              title: 'Owner review',
+              subtitle: 'Inbox: confirm crowd-marked stations before they go on the public map',
+              icon: Icons.verified_user,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0066FF), Color(0xFF7B61FF)],
+              ),
+              onTap: () => context.pushNamed('owner-review'),
             ),
-            locked: limited,
-            onTap: limited ? lockedTap : () => context.pushNamed('owner-review'),
-          ),
           _MenuItem(
-            title: 'Sign out',
-            subtitle: 'Return to Terms of use',
-            icon: Icons.logout,
+            title: limited ? 'Sign in' : 'Sign out',
+            subtitle: limited
+                ? 'Accept the Terms and continue with Google'
+                : 'End this session and close the app',
+            icon: limited ? Icons.login : Icons.logout,
             gradient: const LinearGradient(
               colors: [Color(0xFFFF3B30), Color(0xFFFF6B35)],
             ),
-            onTap: () => ref.read(sessionProvider.notifier).signOut(),
+            onTap: () async {
+              final closeApp = !limited;
+              await ref.read(sessionProvider.notifier).signOut();
+              if (closeApp) {
+                await SystemNavigator.pop();
+              }
+            },
           ),
         ],
       ),

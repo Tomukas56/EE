@@ -119,4 +119,4 @@ sequenceDiagram
 ### 7.4 Session & Payment Data (Transactional)
 *   **Session Info**: Start time, End time, Total kWh consumed.
 *   **Financial**: Total cost, Currency, Payment Method Token (PCI DSS compliant - stored by payment provider, not us).
-*   **History**: List of past charging sessions for the user.
+*   **History / Payments**: List of past charging sessions (app menu: **Payments**).

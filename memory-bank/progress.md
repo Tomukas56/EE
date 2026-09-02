@@ -1,6 +1,6 @@
 # Progress
 
-## What works locally (verified 2026-09-01)
+## What works locally (verified 2026-09-02 on SM-T585)
 
 ### Backend
 - PostgreSQL schema: `station`, `connector`, `charging_session`, crowd tables
@@ -12,33 +12,36 @@
 - `npm run dev` = `tsx watch src/index.ts`
 - CVE lab gate: Snyk (`scripts/scan-cve.sh`) + OSV + npm audit; CycloneDX in `docs/sbom/`
 
-### Mobile
-- Screens: welcome, vehicle (persisted), home, list + filters, detail with Start/Stop, Google Map, trip planner, charging/payment history from API
-- Search, country, connector, min kW filters
-- External navigation / call / website from detail
-- Google Maps key is wired. Google Sign-In still needs SHA-1 in Firebase.
+### Mobile (map chrome approved by user — “vaizdas patrauklus ir aiškus”)
+- Welcome (motto, Google + lab fallback, Skip = map-only guest)
+- Home: Stations · Trip · **Payments** · Account
+- Google Map: search suggestion list; **right** rail = country / plug / kW icons + `+` `−` + nearest + my location
+- List + filters, detail with Start/Stop, Mark a new station, Owner review inbox
+- Trip planner: route polyline map + Navigate (Google Maps, waypoint if stop)
+- Charging / payment history from API; Payments shows wallet-not-linked banner
+- Sign out closes the app; Skip Sign in returns to welcome
 
 ## Completeness vs PRD (honest)
 
 | Capability | Spec | Reality | Score |
 |------------|------|---------|-------|
 | Station list + detail | Required | Live API + UI | **Done** |
-| Map with pins | Required | Google Maps + station pins | **Done** |
+| Map with pins | Required | Google Maps + station pins | **Done** (lab UI approved) |
 | Filters (type, kW, distance) | Required | Country, plug, min kW, search; radius via zoom | **Lab done** |
 | Nearest station | Required | Map `nearest=1` | **Done** |
 | Auth (Google/Apple/email) | Required | Local device session; Firebase SHA-1 missing | **Lab only** |
 | Vehicle profile | Mandatory | Saved on device | **Lab done** |
-| Route planning | Core | Directions or Nominatim + one suggested stop | **Lab done** |
+| Route planning | Core | Map + Directions or Nominatim + Navigate | **Lab done** |
 | Session start/stop | Core | Lab DB estimate, not CPO | **Lab done** |
-| Payments | Core | History = lab-estimate; no Stripe | **Partial** |
+| Payments | Core | History = lab-estimate; wallet banner; no Stripe | **Partial** |
 | Real CPO / OCPI | Planned | OCM static POIs; occupancy UNKNOWN | **Partial** |
 | Users table / JWT | Architecture | reporter_id string only | **Not started** |
 | Tests | Engineering | `npm test` is a stub | **Not started** |
-| Docker Compose | Dev env | Docker not on this Mac | **Blocked locally** |
+| Docker Compose | Dev env | Colima + `./scripts/db-up.sh`, API on :5433 | **Lab done** |
 
 **Overall vs full PRD: ~35–40%.**  
 **Vs Phase-1 backend MVP (stations API): ~90%.**  
-Lab sessions/history/filters/vehicle/trip are usable on the tablet. Store, PCI, CRA, OCPI, iOS are not.
+Store, PCI, CRA, OCPI, iOS are not.
 
 Docs that say “85% / production-ready” overstate production readiness.
 

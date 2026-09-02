@@ -14,8 +14,7 @@ import '../providers/stations_provider.dart';
 import '../services/location_service.dart';
 import '../utils/geo.dart';
 import '../widgets/arrival_check_sheet.dart';
-import '../widgets/country_filter_bar.dart';
-import '../widgets/station_filter_bar.dart';
+import '../widgets/map_filter_rail.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   final bool focusNearest;
@@ -29,6 +28,8 @@ class MapScreen extends ConsumerStatefulWidget {
 class _MapScreenState extends ConsumerState<MapScreen> {
   final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
+  List<Station> _searchHits = const [];
   gmaps.GoogleMapController? _googleMap;
   final Set<gmaps.Marker> _markers = {};
   List<Station> _pins = const [];
@@ -45,19 +46,25 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   void initState() {
     super.initState();
     Future<void>.microtask(_locateOnOpen);
-    if (AppConfig.useGoogleMaps) {
-      Future<void>.delayed(const Duration(seconds: 6), () {
-        if (!mounted || _googleMap != null) return;
-        setState(() => _useGoogleMap = false);
-      });
-    }
   }
 
   @override
   void dispose() {
     _mapController.dispose();
     _searchController.dispose();
+    _searchFocus.dispose();
     super.dispose();
+  }
+
+  bool _googleFallbackArmed = false;
+
+  void _armGoogleFallback() {
+    if (_googleFallbackArmed || !AppConfig.useGoogleMaps) return;
+    _googleFallbackArmed = true;
+    Future<void>.delayed(const Duration(seconds: 20), () {
+      if (!mounted || _googleMap != null) return;
+      setState(() => _useGoogleMap = false);
+    });
   }
 
   List<Station> _mappable(List<Station> stations) {
@@ -183,21 +190,39 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
   }
 
+  void _pickSearchHit(Station station) {
+    _searchFocus.unfocus();
+    _searchController.text = station.name;
+    setState(() => _searchHits = const []);
+    _selectStation(station);
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    _searchFocus.unfocus();
+    setState(() => _searchHits = const []);
+  }
+
+  void _dismissKeyboard() {
+    if (_searchFocus.hasFocus) _searchFocus.unfocus();
+  }
+
   void _applySearch(List<Station> stations) {
-    final q = _searchController.text.trim().toLowerCase();
-    if (q.isEmpty) return;
-    final match = stations.where(hasCoordinates).where((s) {
-      return s.name.toLowerCase().contains(q) ||
-          s.address.toLowerCase().contains(q) ||
-          (s.operatorName?.toLowerCase().contains(q) ?? false);
-    }).firstOrNull;
-    if (match == null) {
+    _dismissKeyboard();
+    final hits = stationsMatchingQuery(stations, _searchController.text);
+    setState(() => _searchHits = hits);
+    if (_searchController.text.trim().length < 2) {
+      return;
+    }
+    if (hits.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No station matched that search')),
       );
       return;
     }
-    _selectStation(match);
+    if (hits.length == 1) {
+      _pickSearchHit(hits.first);
+    }
   }
 
   Future<void> _openDirections(Station station) async {
@@ -306,7 +331,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final centerLat = _cameraLat ?? _me?.latitude ?? vilniusLat;
     final centerLng = _cameraLng ?? _me?.longitude ?? vilniusLng;
     if (_useGoogleMap) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _armGoogleFallback());
       return gmaps.GoogleMap(
+        key: const ValueKey('ee-google-map'),
         initialCameraPosition: gmaps.CameraPosition(
           target: gmaps.LatLng(centerLat, centerLng),
           zoom: nearbyZoom,
@@ -336,11 +363,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           _googleMap = controller;
           _refreshGoogleMarkers(pins);
         },
-        onTap: (latLng) => _selectNearestTo(
-          latLng.latitude,
-          latLng.longitude,
-          pins,
-        ),
+        onTap: (latLng) {
+          _dismissKeyboard();
+          _selectNearestTo(latLng.latitude, latLng.longitude, pins);
+        },
         onCameraMove: (position) {
           _zoom = position.zoom;
           _cameraLat = position.target.latitude;
@@ -368,11 +394,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           _cameraLng = camera.center.longitude;
           if (!hasGesture && mounted) setState(() {});
         },
-        onTap: (tap, latlng) => _selectNearestTo(
-          latlng.latitude,
-          latlng.longitude,
-          pins,
-        ),
+        onTap: (tap, latlng) {
+          _dismissKeyboard();
+          _selectNearestTo(latlng.latitude, latlng.longitude, pins);
+        },
       ),
       children: [
         TileLayer(
@@ -479,6 +504,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               if (mounted) _refreshGoogleMarkers(allPins);
             });
           }
+          final query = _searchController.text.trim();
+          final showHits = query.length >= 2;
           return Stack(
             children: [
               _buildBasemap(allPins),
@@ -495,6 +522,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       borderRadius: BorderRadius.circular(12),
                       child: TextField(
                         controller: _searchController,
+                        focusNode: _searchFocus,
                         textInputAction: TextInputAction.search,
                         style: const TextStyle(
                           color: Color(0xFF111111),
@@ -502,54 +530,98 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         ),
                         cursorColor: const Color(0xFF0066FF),
                         decoration: InputDecoration(
-                          hintText: 'Search station or address…',
+                          hintText: 'Search city, street, or station…',
                           hintStyle: const TextStyle(color: Color(0xFF3A3A3C)),
                           prefixIcon: const Icon(
                             Icons.search,
                             color: Color(0xFF111111),
                           ),
-                          suffixIcon: IconButton(
-                            icon: const Icon(
-                              Icons.arrow_forward,
-                              color: Color(0xFF111111),
-                            ),
-                            onPressed: () => _applySearch(allPins),
-                          ),
+                          suffixIcon: query.isEmpty
+                              ? IconButton(
+                                  tooltip: 'Search',
+                                  icon: const Icon(
+                                    Icons.arrow_forward,
+                                    color: Color(0xFF111111),
+                                  ),
+                                  onPressed: () => _applySearch(allPins),
+                                )
+                              : IconButton(
+                                  tooltip: 'Clear',
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: Color(0xFF111111),
+                                  ),
+                                  onPressed: _clearSearch,
+                                ),
                           filled: true,
                           fillColor: Colors.white,
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 14),
                         ),
+                        onTapOutside: (_) => _dismissKeyboard(),
+                        onChanged: (_) {
+                          setState(() {
+                            _searchHits = stationsMatchingQuery(
+                              allPins,
+                              _searchController.text,
+                            );
+                          });
+                        },
                         onSubmitted: (_) => _applySearch(allPins),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              CountryFilterBar(compact: true),
-                              SizedBox(height: 6),
-                              StationFilterBar(compact: true),
-                            ],
-                          ),
+                    if (showHits) ...[
+                      const SizedBox(height: 6),
+                      Material(
+                        color: Colors.white,
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(12),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 280),
+                          child: _searchHits.isEmpty
+                              ? const ListTile(
+                                  dense: true,
+                                  title: Text('No stations match that search'),
+                                )
+                              : ListView.separated(
+                                  shrinkWrap: true,
+                                  padding: EdgeInsets.zero,
+                                  itemCount: _searchHits.length,
+                                  separatorBuilder: (context, index) =>
+                                      const Divider(height: 1),
+                                  itemBuilder: (context, index) {
+                                    final station = _searchHits[index];
+                                    return ListTile(
+                                      dense: true,
+                                      leading: const Icon(
+                                        Icons.ev_station,
+                                        color: Color(0xFF0066FF),
+                                      ),
+                                      title: Text(
+                                        station.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Color(0xFF111111),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        station.address,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Color(0xFF3A3A3C),
+                                        ),
+                                      ),
+                                      onTap: () => _pickSearchHit(station),
+                                    );
+                                  },
+                                ),
                         ),
-                        const SizedBox(width: 8),
-                        _MapZoomControls(
-                          radiusLabel: formatRadiusKm(radiusKmForZoom(_zoom)),
-                          canZoomIn: _zoom < nearbyMaxZoom - 0.05,
-                          canZoomOut: _zoom > nearbyMinZoom + 0.05,
-                          onZoomIn: () => _nudgeZoom(nearbyZoomStep),
-                          onZoomOut: () => _nudgeZoom(-nearbyZoomStep),
-                          showLocation: false,
-                          onNearest: () {},
-                          onMyLocation: () {},
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -576,17 +648,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               Positioned(
                 right: 16,
                 bottom: destination != null ? 168 : 24,
-                child: _MapZoomControls(
-                  radiusLabel: formatRadiusKm(radiusKmForZoom(_zoom)),
-                  canZoomIn: _zoom < nearbyMaxZoom - 0.05,
-                  canZoomOut: _zoom > nearbyMinZoom + 0.05,
-                  onZoomIn: () => _nudgeZoom(nearbyZoomStep),
-                  onZoomOut: () => _nudgeZoom(-nearbyZoomStep),
-                  showLocation: destination == null,
-                  zoomButtons: false,
-                  showNearest: !limited,
-                  onNearest: () => _goToMyLocation(thenNearest: true),
-                  onMyLocation: () => _goToMyLocation(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (!showHits) ...[
+                      const MapFilterRail(),
+                      const SizedBox(height: 12),
+                    ],
+                    _MapZoomControls(
+                      radiusLabel: formatRadiusKm(radiusKmForZoom(_zoom)),
+                      canZoomIn: _zoom < nearbyMaxZoom - 0.05,
+                      canZoomOut: _zoom > nearbyMinZoom + 0.05,
+                      onZoomIn: () => _nudgeZoom(nearbyZoomStep),
+                      onZoomOut: () => _nudgeZoom(-nearbyZoomStep),
+                      showLocation: true,
+                      showNearest: !limited,
+                      onNearest: () => _goToMyLocation(thenNearest: true),
+                      onMyLocation: () => _goToMyLocation(),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -623,7 +704,6 @@ class _MapZoomControls extends StatelessWidget {
   final VoidCallback onZoomIn;
   final VoidCallback onZoomOut;
   final bool showLocation;
-  final bool zoomButtons;
   final bool showNearest;
   final VoidCallback onNearest;
   final VoidCallback onMyLocation;
@@ -635,7 +715,6 @@ class _MapZoomControls extends StatelessWidget {
     required this.onZoomIn,
     required this.onZoomOut,
     required this.showLocation,
-    this.zoomButtons = true,
     this.showNearest = true,
     required this.onNearest,
     required this.onMyLocation,
@@ -646,39 +725,37 @@ class _MapZoomControls extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (zoomButtons) ...[
-          FloatingActionButton.small(
-            heroTag: 'zoom-in',
-            tooltip: 'Zoom in',
-            onPressed: canZoomIn ? onZoomIn : null,
-            child: const Icon(Icons.add),
-          ),
-          const SizedBox(height: 6),
-          Material(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Text(
-                radiusLabel,
-                style: const TextStyle(
-                  color: Color(0xFF111111),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
+        FloatingActionButton.small(
+          heroTag: 'zoom-in',
+          tooltip: 'Zoom in',
+          onPressed: canZoomIn ? onZoomIn : null,
+          child: const Icon(Icons.add),
+        ),
+        const SizedBox(height: 6),
+        Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Text(
+              radiusLabel,
+              style: const TextStyle(
+                color: Color(0xFF111111),
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
               ),
             ),
           ),
-          const SizedBox(height: 6),
-          FloatingActionButton.small(
-            heroTag: 'zoom-out',
-            tooltip: 'Zoom out',
-            onPressed: canZoomOut ? onZoomOut : null,
-            child: const Icon(Icons.remove),
-          ),
-        ],
+        ),
+        const SizedBox(height: 6),
+        FloatingActionButton.small(
+          heroTag: 'zoom-out',
+          tooltip: 'Zoom out',
+          onPressed: canZoomOut ? onZoomOut : null,
+          child: const Icon(Icons.remove),
+        ),
         if (showLocation) ...[
-          if (zoomButtons) const SizedBox(height: 12),
+          const SizedBox(height: 12),
           if (showNearest) ...[
             FloatingActionButton.small(
               heroTag: 'nearest',
