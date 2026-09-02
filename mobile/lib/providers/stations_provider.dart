@@ -62,7 +62,7 @@ bool matchesPowerFilter(Station station, double minKw) {
 // Filtered Stations Provider
 final filteredStationsProvider = Provider<AsyncValue<List<Station>>>((ref) {
   final stationsAsync = ref.watch(stationsProvider);
-  final searchQuery = ref.watch(searchQueryProvider).toLowerCase();
+  final searchQuery = ref.watch(searchQueryProvider);
   final country = ref.watch(countryFilterProvider);
   final connector = ref.watch(connectorFilterProvider);
   final minKw = ref.watch(minPowerKwProvider);
@@ -72,10 +72,8 @@ final filteredStationsProvider = Provider<AsyncValue<List<Station>>>((ref) {
       if (!matchesCountryFilter(station, country)) return false;
       if (!matchesConnectorFilter(station, connector)) return false;
       if (!matchesPowerFilter(station, minKw)) return false;
-      if (searchQuery.isEmpty) return true;
-      return station.name.toLowerCase().contains(searchQuery) ||
-          station.address.toLowerCase().contains(searchQuery) ||
-          (station.operatorName?.toLowerCase().contains(searchQuery) ?? false);
+      if (searchQuery.trim().isEmpty) return true;
+      return stationMatchesQuery(station, searchQuery);
     }).toList();
   });
 });

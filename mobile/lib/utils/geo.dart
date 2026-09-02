@@ -120,15 +120,73 @@ List<Station> stationsWithin(
       .toList();
 }
 
+/// Fold LT/LV/EE/PL letters so "Raciu" matches "Račių" and "c" matches "č".
+String foldSearchText(String input) {
+  final lower = input.toLowerCase();
+  final out = StringBuffer();
+  for (final rune in lower.runes) {
+    out.write(_foldSearchRune(rune));
+  }
+  return out.toString();
+}
+
+String _foldSearchRune(int rune) {
+  switch (rune) {
+    case 0x0105: // ą
+    case 0x0101: // ā
+    case 0x00E4: // ä
+      return 'a';
+    case 0x010D: // č
+    case 0x0107: // ć
+      return 'c';
+    case 0x0119: // ę
+    case 0x0117: // ė
+    case 0x0113: // ē
+      return 'e';
+    case 0x0123: // ģ
+      return 'g';
+    case 0x012F: // į
+    case 0x012B: // ī
+      return 'i';
+    case 0x0137: // ķ
+      return 'k';
+    case 0x013C: // ļ
+    case 0x0142: // ł
+      return 'l';
+    case 0x0146: // ņ
+    case 0x0144: // ń
+      return 'n';
+    case 0x00F6: // ö
+    case 0x00F5: // õ
+    case 0x00F3: // ó
+      return 'o';
+    case 0x0161: // š
+    case 0x015B: // ś
+      return 's';
+    case 0x0173: // ų
+    case 0x016B: // ū
+    case 0x00FC: // ü
+      return 'u';
+    case 0x017E: // ž
+    case 0x017A: // ź
+    case 0x017C: // ż
+      return 'z';
+    default:
+      return String.fromCharCode(rune);
+  }
+}
+
 bool stationMatchesQuery(Station station, String query) {
-  final q = query.trim().toLowerCase();
+  final q = foldSearchText(query.trim());
   if (q.isEmpty) return false;
-  final hay = [
-    station.name,
-    station.address,
-    station.operatorName ?? '',
-    station.countryCode ?? '',
-  ].join(' ').toLowerCase();
+  final hay = foldSearchText(
+    [
+      station.name,
+      station.address,
+      station.operatorName ?? '',
+      station.countryCode ?? '',
+    ].join(' '),
+  );
   if (hay.contains(q)) return true;
   if (q.length >= 4) {
     final stem = q.substring(0, q.length - 1);
@@ -142,14 +200,14 @@ List<Station> stationsMatchingQuery(
   String query, {
   int limit = 20,
 }) {
-  final q = query.trim().toLowerCase();
+  final q = foldSearchText(query.trim());
   if (q.length < 2) return const [];
   final hits = stations.where(hasCoordinates).where((station) {
-    return stationMatchesQuery(station, q);
+    return stationMatchesQuery(station, query);
   }).toList();
   int score(Station station) {
-    final name = station.name.toLowerCase();
-    final address = station.address.toLowerCase();
+    final name = foldSearchText(station.name);
+    final address = foldSearchText(station.address);
     if (name.startsWith(q) || address.startsWith(q)) return 0;
     if (name.contains(q)) return 1;
     if (address.contains(q)) return 2;

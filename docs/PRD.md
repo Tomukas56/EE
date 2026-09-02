@@ -43,7 +43,7 @@ Energy Eniwhere is a comprehensive mobile application for Electric Vehicle (EV) 
 ### 2.4 Charging Station Discovery
 *   Real-time map and list of stations.
 *   Filter by country, connector, speed (kW), and (when available) occupancy.
-*   Map chrome (lab, approved 2026-09-02): search at the top with a **list of name/address matches**; compact **country / plug / kW** icons on the **right**, same column as zoom `+` `−`, nearest, and my location. Google Maps is the basemap.
+*   Map chrome (lab, approved 2026-09-02): search at the top with a **list of name/address matches**; search is **diacritic-insensitive** for LT/LV/EE/PL (`Raciu` matches `Račių`). Compact **country / plug / kW** icons on the **right**, same column as zoom `+` `−`, nearest, and my location. Google Maps is the basemap.
 *   "Nearest Station" quick action (same map, centered on the device).
 *   **Mark a new station**: a driver can pin a missing column. The pin is **not** shown on the public map until the **app owner confirms the physical location**.
 *   **Arrival check**: when the driver arrives, the app asks (Yes / No / Dismiss): is the station working? are there free connectors?
@@ -243,7 +243,7 @@ Root menu (English UI): **Stations** · **Trip** · **Payments** · **Account**.
 | Stations | Map of stations, Nearest column, Station list, Mark a new station | Map chrome in §2.4. Skip mode: map only. |
 | Trip | Trip with charging, My vehicle | Planner shows a map polyline and **Navigate**. |
 | Payments | Charging history, Payments | Former “History” tile. Payments lists lab estimates + wallet-not-linked banner. |
-| Account | Signed in, Legal & privacy, Owner review, Sign out | Owner review = PIN inbox for crowd marks. **Sign out** ends the session and closes the app. Skip **Sign in** returns to welcome only. |
+| Account | Signed in, Legal & privacy, Owner review, Sign out | Owner review = PIN inbox. Menu **title** size matches other tiles. **Sign out** closes the app. Skip **Sign in** → welcome. |
 
-Tablet QA (SM-T585): map layout approved. Completeness vs this PRD remains ~35–40% — see `memory-bank/progress.md`.
+Tablet QA (SM-T585): map layout and this IA **locked in** 2026-09-02. Completeness vs this PRD remains ~35–40% — see `memory-bank/progress.md`.
 

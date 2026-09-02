@@ -15,7 +15,8 @@
 ### Mobile (map chrome approved by user — “vaizdas patrauklus ir aiškus”)
 - Welcome (motto, Google + lab fallback, Skip = map-only guest)
 - Home: Stations · Trip · **Payments** · Account
-- Google Map: search suggestion list; **right** rail = country / plug / kW icons + `+` `−` + nearest + my location
+- Google Map: search suggestion list (diacritic-insensitive: `Raciu`/`Račių`); **right** rail = country / plug / kW + zoom/location
+- Home tiles: equal title size (Owner review no longer shrinks)
 - List + filters, detail with Start/Stop, Mark a new station, Owner review inbox
 - Trip planner: route polyline map + Navigate (Google Maps, waypoint if stop)
 - Charging / payment history from API; Payments shows wallet-not-linked banner

@@ -23,6 +23,7 @@ Flutter app  --HTTP-->  Express API  -->  Prisma  -->  PostgreSQL
 - Flutter 3.32.8, Riverpod, GoRouter, `google_maps_flutter` + `flutter_map` OSM fallback
 - Physical Android uses `AppConfig.lanApi` (`http://192.168.1.228:3000`) or `adb reverse tcp:3000`
 - Map: do **not** wrap `GoogleMap` in pointer interceptors. Filters + zoom live in one **right** `Positioned` column.
+- Search: `foldSearchText` in `geo.dart` (LT/LV/EE/PL diacritics). Menu tiles: do not wrap the whole card in one `FittedBox`.
 - Session: SharedPreferences; Google Sign-In attempted, lab-device fallback on ApiException 10
 - Firebase Auth is not a store-ready OIDC flow until SHA-1 is in Firebase
 

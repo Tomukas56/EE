@@ -84,6 +84,7 @@ Query local database for station locations (Hybrid Strategy). Fetch real-time av
 #### 3.2.4 Outputs
 Map pins indicating station location. Lab occupancy is UNKNOWN until OCPI.
 Search on the map shall list matching stations (name and address), not jump to a single hit.
+Search shall treat Lithuanian (and LV/EE/PL) letters as equivalent to their ASCII base (`Raciu` matches `Račių`, `c` matches `č`).
 Map controls: compact country / plug / min-kW icons on the **same side** as zoom and my-location (right). Google Maps SDK is the lab basemap.
 
 ### 3.2.a Data Synchronization Strategy (Hybrid Model)

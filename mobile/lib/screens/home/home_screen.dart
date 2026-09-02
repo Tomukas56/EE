@@ -176,7 +176,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           if (!limited)
             _MenuItem(
               title: 'Owner review',
-              subtitle: 'Inbox: confirm crowd-marked stations before they go on the public map',
+              subtitle: 'Confirm crowd marks before they go on the map',
               icon: Icons.verified_user,
               gradient: const LinearGradient(
                 colors: [Color(0xFF0066FF), Color(0xFF7B61FF)],
@@ -436,14 +436,14 @@ class _DashboardCard extends StatelessWidget {
           decoration: BoxDecoration(gradient: item.gradient),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(item.icon, size: 80, color: Colors.white),
-                  const SizedBox(height: 14),
-                  Text(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(item.icon, size: 80, color: Colors.white),
+                const SizedBox(height: 14),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
                     item.title,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
@@ -453,18 +453,20 @@ class _DashboardCard extends StatelessWidget {
                       height: 1.1,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    item.subtitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.92),
-                      fontSize: 16,
-                      height: 1.2,
-                    ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  item.subtitle,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.92),
+                    fontSize: 16,
+                    height: 1.2,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

@@ -208,6 +208,14 @@
 
 ---
 
+## 2026-09-02 — Snapshot locked (tablet QA)
+
+- Diacritic-insensitive search (LT/LV/EE/PL): `Raciu` = `Račių`.
+- Account menu titles stay uniform (Owner review no longer shrinks via FittedBox).
+- Previous same-day slice: right-side map filters, Payments menu, trip Navigate, Sign out closes app.
+
+---
+
 ## 2026-09-02 — Tablet map IA + Payments menu
 
 - Map: Google Maps; search match list; compact country/plug/kW icons on the **right** with `+` `−` / nearest / my location. Do not wrap GoogleMap in Listener.
@@ -218,6 +226,8 @@
 - Station catalogue is Open Charge Map (~2590), not 7 mock rows.
 
 ---
+
+## 2026-08-31 — Local bring-up on macOS 13 (Ventura)
 
 - Cloned/synced repo; nested `OneDrive - teltonika.lt/` duplicate was removed 2026-09-01.
 - Docker **Colima** is the lab engine. Live API database is Compose Postgres **port 5433** (`./scripts/db-up.sh`). Postgres.app is not required.

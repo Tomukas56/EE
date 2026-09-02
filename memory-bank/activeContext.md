@@ -1,36 +1,31 @@
 # Active Context
 
-## Focus (2026-09-02)
-Tablet QA on SM-T585: map chrome approved — compact country / plug / kW icons on the **right**, same column as `+` `−`, nearest, my location. Google Maps loads. Search lists name/address matches.
+## Focus (2026-09-02) — snapshot locked in
+Tablet QA on SM-T585 accepted this lab chrome:
+
+- Map: Google Maps; search match list; country / plug / kW icons on the **right** with `+` `−`, nearest, my location.
+- Search is **diacritic-insensitive** (LT/LV/EE/PL): `Raciu` = `Račių`, `c` = `č`.
+- Root: Stations · Trip · **Payments** · Account. Menu titles stay the same size (Owner review subtitle no longer shrinks the tile).
+- Trip: route map + Navigate. Sign out closes the app.
 
 Do **not** claim done: live Stripe/PCI, OCPI occupancy, iOS, CRA/CE, production HTTPS, Maps key restriction, User JWT.
 
 ## Decisions this session
-- Map filters stay on the **right** with zoom/location (not the left). Do not wrap `GoogleMap` in `Listener` / `GestureDetector` — that blanks the Android platform view.
-- Google Maps fallback to OSM must **not** start at `initState`; arm it only after the map widget is on screen, and wait ~20s (GPS + Maps SDK on SM-T585 is slow).
-- Lab charging is local DB only: energy = elapsed hours × max connector kW (min 1 minute), €0.32/kWh, `payment_method: lab-estimate`.
-- Vehicle profile stays on-device (SharedPreferences), not a User table.
-- Root menu: Stations · Trip · **Payments** (subtitle Sessions · History) · Account. History tile renamed.
-- Payments screen shows device wallet binding (Android Google Wallet/Pay, iOS Apple Wallet/Pay). Lab = not linked.
-- Owner review is the **owner PIN inbox** for crowd-marked stations; unpublished until confirm.
-- Signed-in **Sign out** ends the session and `SystemNavigator.pop()` (closes the app). Skip **Sign in** only returns to welcome.
-- Trip planner shows a route map + **Navigate** (Google Maps directions; waypoint if a charging stop exists).
-- Flutter **3.32.8 / Dart 3.8.1**. Do not `flutter upgrade` on this Mac.
+- Map filters stay on the **right** with zoom/location. Do not wrap `GoogleMap` in `Listener` / `GestureDetector`.
+- Google Maps OSM fallback: arm only after the map is on screen (~20s), not at `initState`.
+- Search folds Baltic/Polish letters in `foldSearchText` (`mobile/lib/utils/geo.dart`); used by map suggestions and the station list.
+- Menu cards: do not wrap the whole tile in one `FittedBox` — long subtitles must not scale down the title.
+- Lab charging: elapsed hours × max kW, €0.32/kWh, `payment_method: lab-estimate`.
+- Flutter **3.32.8 / Dart 3.8.1**. Do not `flutter upgrade`.
 
 ## What is running
-- API: `node dist/index.js` in `backend/` on port 3000 (`0.0.0.0`)
-- DB: Compose `energy_eniwhere_db` on **127.0.0.1:5433** (`./scripts/db-up.sh`).
-- Last OCM sync: **~2590** mappable (LT ~1909, LV ~93, EE ~170, PL ~418)
-- Tablet: Samsung SM-T585 — `adb reverse tcp:3000 tcp:3000`; `flutter run -d 330039b62585a5df`
-- Debug session often logs `Lost connection to device` when the tablet is backgrounded; the APK stays installed.
+- API: `node dist/index.js` in `backend/` on port 3000
+- DB: Compose on **127.0.0.1:5433** (`./scripts/db-up.sh`)
+- Tablet: SM-T585 — `adb reverse tcp:3000 tcp:3000`
 
 ## Next work (priority)
-1. Continue tablet QA: Trip Navigate, Start/Stop, Payments, Sign out
-2. Firebase SHA-1 + real Google Sign-In (then remove local bypass for store)
+1. Continue tablet QA: Trip Navigate, Start/Stop, Payments
+2. Firebase SHA-1 + real Google Sign-In
 3. Stripe Payment Sheet only after HTTPS + test key
 4. CRA Art. 14 playbook before any store listing
 5. Tests; DEMO.md still overstates readiness
-
-Crowd stations: pending until owner PIN (`APP_OWNER_PIN`, lab default `2468`) confirms physical location.
-
-Do not treat DEMO.md “85% complete / production-ready” as accurate — see `progress.md`.

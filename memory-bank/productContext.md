@@ -17,7 +17,7 @@ EV drivers in Lithuania currently switch between Ignitis, Elinta, Tesla, and ret
 ## What users can do today (lab build, SM-T585)
 - Welcome → tick Agreement → Continue with Google (lab fallback if Play OAuth 10) or Skip (map-only this session).
 - Root menu: **Stations**, **Trip**, **Payments**, **Account**.
-- Map: Google Maps pins, search match list, right-side country/plug/kW icons and zoom/location. Go opens Google Maps navigation.
+- Map: Google Maps pins, search match list (Lithuanian letters folded: `c`/`č`), right-side country/plug/kW icons and zoom/location. Go opens Google Maps navigation.
 - List, Mark a new station (hidden until Owner review PIN), vehicle profile on device.
 - Trip planner: route map + Navigate.
 - Start/Stop lab sessions; charging and payment lists from the API (estimates, wallet not linked).
