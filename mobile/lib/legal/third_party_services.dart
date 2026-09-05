@@ -35,8 +35,16 @@ class ThirdPartyServices {
       privacyUrl: 'https://policies.google.com/privacy',
     ),
     ThirdPartyService(
+      name: 'Via Lietuva (open data)',
+      role:
+          'Lithuania charging locations, live EVSE status, and published tariffs (OCPI 2.3.0). '
+          'CC BY 4.0 / ODC-BY — attribution required. The app reads this only via the EE API.',
+      termsUrl: 'https://ev.vialietuva.lt/atviri-duomenys-1',
+      privacyUrl: 'https://ev.vialietuva.lt/atviri-duomenys-1',
+    ),
+    ThirdPartyService(
       name: 'Open Charge Map',
-      role: 'Public charging-station locations for LT, LV, EE, PL. Occupancy is not live.',
+      role: 'Public charging-station locations for LV, EE, PL (and LT fallback). Occupancy is not live.',
       termsUrl: 'https://openchargemap.org/site/about/terms',
       privacyUrl: 'https://openchargemap.org/site/about/privacy',
     ),

@@ -12,12 +12,15 @@ class MapFilterRail extends ConsumerWidget {
     final country = ref.watch(countryFilterProvider);
     final connector = ref.watch(connectorFilterProvider);
     final minKw = ref.watch(minPowerKwProvider);
+    final minEur = ref.watch(minPriceEurProvider);
+    final maxEur = ref.watch(maxPriceEurProvider);
     final countryLabel =
         countryFilters.firstWhere((f) => f.code == country).label;
     final plugLabel =
         connectorFilters.firstWhere((f) => f.code == connector).label;
     final powerLabel =
         powerFilters.firstWhere((f) => f.kw == minKw).label;
+    final priceLabel = _priceRailLabel(minEur, maxEur);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -73,7 +76,91 @@ class MapFilterRail extends ConsumerWidget {
             },
           ),
         ),
+        const SizedBox(height: 8),
+        _FilterIcon(
+          tooltip: 'Price',
+          label: priceLabel,
+          icon: Icons.euro,
+          onTap: () => _pickPrice(context, ref, minEur, maxEur),
+        ),
       ],
+    );
+  }
+
+  Future<void> _pickPrice(
+    BuildContext context,
+    WidgetRef ref,
+    double minEur,
+    double maxEur,
+  ) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(8, 0, 8, 8),
+                  child: Text(
+                    'Price (€/kWh)',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(8, 0, 8, 4),
+                  child: Text('Lowest', style: TextStyle(color: Color(0xFF3A3A3C))),
+                ),
+                for (final option in priceMinFilters)
+                  ListTile(
+                    dense: true,
+                    title: Text(option.label),
+                    trailing: option.eur == minEur
+                        ? const Icon(Icons.check, color: Color(0xFF0066FF))
+                        : null,
+                    onTap: () {
+                      var nextMin = option.eur;
+                      var nextMax = maxEur;
+                      if (nextMin > 0 && nextMax > 0 && nextMin > nextMax) {
+                        nextMax = nextMin;
+                      }
+                      ref.read(minPriceEurProvider.notifier).state = nextMin;
+                      ref.read(maxPriceEurProvider.notifier).state = nextMax;
+                      Navigator.pop(context);
+                    },
+                  ),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(8, 8, 8, 4),
+                  child: Text('Highest', style: TextStyle(color: Color(0xFF3A3A3C))),
+                ),
+                for (final option in priceMaxFilters)
+                  ListTile(
+                    dense: true,
+                    title: Text(option.label),
+                    trailing: option.eur == maxEur
+                        ? const Icon(Icons.check, color: Color(0xFF0066FF))
+                        : null,
+                    onTap: () {
+                      var nextMax = option.eur;
+                      var nextMin = minEur;
+                      if (nextMin > 0 && nextMax > 0 && nextMin > nextMax) {
+                        nextMin = nextMax;
+                      }
+                      ref.read(minPriceEurProvider.notifier).state = nextMin;
+                      ref.read(maxPriceEurProvider.notifier).state = nextMax;
+                      Navigator.pop(context);
+                    },
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -122,6 +209,13 @@ class MapFilterRail extends ConsumerWidget {
     );
     if (picked != null) onPicked(picked);
   }
+}
+
+String _priceRailLabel(double minEur, double maxEur) {
+  if (minEur <= 0 && maxEur <= 0) return '€';
+  if (minEur <= 0) return '≤${maxEur.toStringAsFixed(2)}';
+  if (maxEur <= 0) return '≥${minEur.toStringAsFixed(2)}';
+  return '${minEur.toStringAsFixed(2)}–${maxEur.toStringAsFixed(2)}';
 }
 
 class _FilterIcon extends StatelessWidget {

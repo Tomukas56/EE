@@ -163,7 +163,7 @@ ENERGY/
 │   │   ├── lib/
 │   │   │   └── prisma.ts       # Prisma client
 │   │   ├── services/
-│   │   │   └── CPOService.ts   # Mock CPO data provider
+│   │   │   └── CPOService.ts   # Open Charge Map pull
 │   │   ├── workers/
 │   │   │   └── SyncWorker.ts   # Data sync cron job
 │   │   ├── routes/
@@ -172,9 +172,10 @@ ENERGY/
 │   ├── .env                    # Environment variables
 │   └── package.json
 ├── docs/
+│   ├── PRD.md                  # Product requirements (canon)
 │   ├── specs/
-│   │   ├── PRD.md              # Product Requirements
-│   │   └── DFD.md              # Data Flow Diagram
+│   │   ├── DFD.md              # Production data-flow
+│   │   └── ADR-001-Data-Strategy.md
 │   └── memory-bank.md          # Change log
 ├── docker-compose.yml          # PostgreSQL setup
 └── README.md

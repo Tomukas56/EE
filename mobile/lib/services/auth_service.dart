@@ -27,7 +27,14 @@ class AuthService {
 
   static Future<bool> readAgreementAccepted() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(agreementKey) ?? false;
+    final current = prefs.getBool(agreementKey);
+    if (current == true) return true;
+    final legacy = prefs.getBool(_legacyAgreementKey) ?? false;
+    if (legacy) {
+      await prefs.setBool(agreementKey, true);
+      return true;
+    }
+    return false;
   }
 
   Future<void> persistAgreementAccepted(bool accepted) async {
@@ -168,6 +175,7 @@ class AuthService {
     await _persist(null);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(skippedKey, false);
+    // Keep agreementKey so README is not shown again after Sign out.
   }
 
   /// Wipe EE keys on this device (session, legal tick, vehicle, owner PIN).

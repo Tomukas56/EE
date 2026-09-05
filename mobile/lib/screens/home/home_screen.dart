@@ -18,6 +18,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   _MenuItem? _submenu;
 
   List<_MenuItem> _rootItems(BuildContext context, {required bool limited}) {
+    final vehicle = ref.watch(vehicleProvider);
     void lockedTap() {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -102,8 +103,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           _MenuItem(
             title: 'My vehicle',
-            subtitle: ref.watch(vehicleProvider)?.label ??
-                'Battery, range, connector',
+            subtitle: vehicle == null
+                ? 'Battery, range, connector'
+                : 'Active · ${vehicle.label} · ${vehicle.connectorType}',
             icon: Icons.directions_car,
             gradient: const LinearGradient(
               colors: [Color(0xFF0066FF), Color(0xFF00D9C0)],
@@ -187,7 +189,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             title: limited ? 'Sign in' : 'Sign out',
             subtitle: limited
                 ? 'Accept the Terms and continue with Google'
-                : 'End this session and close the app',
+                : 'Next launch will ask for Google again. README stays accepted.',
             icon: limited ? Icons.login : Icons.logout,
             gradient: const LinearGradient(
               colors: [Color(0xFFFF3B30), Color(0xFFFF6B35)],

@@ -11,6 +11,8 @@ class StationFilterBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final connector = ref.watch(connectorFilterProvider);
     final minKw = ref.watch(minPowerKwProvider);
+    final minEur = ref.watch(minPriceEurProvider);
+    final maxEur = ref.watch(maxPriceEurProvider);
     final density = compact ? VisualDensity.compact : VisualDensity.standard;
     final gap = compact ? 6.0 : 8.0;
 
@@ -87,6 +89,46 @@ class StationFilterBar extends ConsumerWidget {
         connectorRow,
         SizedBox(height: compact ? gap : 8),
         powerRow,
+        SizedBox(height: compact ? gap : 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final option in priceMinFilters)
+                chip(
+                  label: option.label,
+                  selected: minEur == option.eur,
+                  selectedColor: const Color(0xFF0066FF),
+                  selectedText: Colors.white,
+                  onTap: () {
+                    var nextMin = option.eur;
+                    var nextMax = maxEur;
+                    if (nextMin > 0 && nextMax > 0 && nextMin > nextMax) {
+                      nextMax = nextMin;
+                    }
+                    ref.read(minPriceEurProvider.notifier).state = nextMin;
+                    ref.read(maxPriceEurProvider.notifier).state = nextMax;
+                  },
+                ),
+              for (final option in priceMaxFilters.skip(1))
+                chip(
+                  label: option.label,
+                  selected: maxEur == option.eur,
+                  selectedColor: const Color(0xFF111111),
+                  selectedText: Colors.white,
+                  onTap: () {
+                    var nextMax = option.eur;
+                    var nextMin = minEur;
+                    if (nextMin > 0 && nextMax > 0 && nextMin > nextMax) {
+                      nextMin = nextMax;
+                    }
+                    ref.read(minPriceEurProvider.notifier).state = nextMin;
+                    ref.read(maxPriceEurProvider.notifier).state = nextMax;
+                  },
+                ),
+            ],
+          ),
+        ),
       ],
     );
   }

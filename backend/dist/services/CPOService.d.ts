@@ -37,7 +37,9 @@ export declare class CPOService {
     private readonly maxResults;
     constructor();
     get configuredCountries(): string[];
-    fetchStations(): Promise<{
+    fetchStations(options?: {
+        excludeCountries?: string[];
+    }): Promise<{
         stations: StationData[];
         fetchedCountries: string[];
     }>;

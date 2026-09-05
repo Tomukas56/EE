@@ -31,6 +31,24 @@ class Vehicle {
     }
   }
 
+  String get specsLine =>
+      '${batteryCapacityKWh.toStringAsFixed(0)} kWh · ${maxRangeKm.toStringAsFixed(0)} km · $connectorType';
+
+  bool matchesStationPlugs(List<String> types) {
+    if (types.isEmpty) return true;
+    final want = filterType;
+    return types.any((raw) {
+      final t = raw.toUpperCase().replaceAll(RegExp(r'[\s_\-]'), '');
+      if (want == 'CCS') {
+        return t.contains('CCS') || t.contains('COMBO');
+      }
+      if (want == 'CHAdeMO') {
+        return t.contains('CHADEMO');
+      }
+      return t.contains('TYPE2') || t.contains('MENNEKES');
+    });
+  }
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'make': make,
@@ -38,6 +56,7 @@ class Vehicle {
         'batteryCapacityKWh': batteryCapacityKWh,
         'maxRangeKm': maxRangeKm,
         'connectorType': connectorType,
+        'active': true,
       };
 
   factory Vehicle.fromJson(Map<String, dynamic> json) {

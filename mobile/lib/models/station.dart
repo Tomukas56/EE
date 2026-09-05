@@ -13,6 +13,9 @@ class Station {
   final int availableConnectors;
   final List<String> connectorTypes;
   final double maxPowerKw;
+  final String? tariff;
+  final String? source;
+  final DateTime? lastSyncedAt;
 
   Station({
     required this.id,
@@ -27,7 +30,27 @@ class Station {
     required this.availableConnectors,
     this.connectorTypes = const [],
     this.maxPowerKw = 0,
+    this.tariff,
+    this.source,
+    this.lastSyncedAt,
   });
+
+  bool get hasLiveOccupancy => source == 'via_lietuva';
+
+  /// Parsed €/kWh from catalogue tariff text (`€0.38/kWh`).
+  double? get tariffEur {
+    final raw = tariff;
+    if (raw == null) return null;
+    final match = RegExp(r'(\d+[.,]\d+|\d+)').firstMatch(raw);
+    if (match == null) return null;
+    return double.tryParse(match.group(1)!.replaceAll(',', '.'));
+  }
+
+  String? get tariffPinLabel {
+    final eur = tariffEur;
+    if (eur == null) return null;
+    return '€${eur.toStringAsFixed(2)}';
+  }
 
   factory Station.fromJson(Map<String, dynamic> json) {
     return Station(
@@ -52,6 +75,11 @@ class Station {
       maxPowerKw: json['max_power_kw'] != null
           ? (json['max_power_kw'] as num).toDouble()
           : 0,
+      tariff: json['tariff'] as String?,
+      source: json['source'] as String?,
+      lastSyncedAt: json['last_synced_at'] != null
+          ? DateTime.tryParse(json['last_synced_at'] as String)
+          : null,
     );
   }
 
@@ -69,6 +97,9 @@ class Station {
       'available_connectors': availableConnectors,
       'connector_types': connectorTypes,
       'max_power_kw': maxPowerKw,
+      'tariff': tariff,
+      'source': source,
+      'last_synced_at': lastSyncedAt?.toIso8601String(),
     };
   }
 }
@@ -94,6 +125,9 @@ class StationDetail extends Station {
     this.phone,
     this.openingHours,
     required this.connectors,
+    super.tariff,
+    super.source,
+    super.lastSyncedAt,
   });
 
   factory StationDetail.fromJson(Map<String, dynamic> json) {
@@ -124,6 +158,11 @@ class StationDetail extends Station {
               ?.map((c) => Connector.fromJson(c as Map<String, dynamic>))
               .toList() ??
           [],
+      tariff: json['tariff'] as String?,
+      source: json['source'] as String?,
+      lastSyncedAt: json['last_synced_at'] != null
+          ? DateTime.tryParse(json['last_synced_at'] as String)
+          : null,
     );
   }
 

@@ -50,3 +50,14 @@ It is **inefficient** and **risky** to rely solely on real-time internet fetchin
 **The Strategy:**
 1.  **Store** locations locally (for speed).
 2.  **Fetch** status over the internet (for accuracy) only for the stations the   user is currently looking at.
+
+## 4. Update (2026-09-03) — last-known in EE DB
+
+PRD §10 and [DFD.md](DFD.md) **supersede** “JIT proxy to the CPO on every station-detail tap” as the primary occupancy path.
+
+* Static **and** dynamic status live in **our** PostgreSQL/PostGIS as last-known + `last_updated`.
+* Ingest is PUSH (OCPI) and/or POLL into connectors — not the Flutter app.
+* A down CPO must not blank the map.
+* Optional extra refresh on detail view is allowed; it is not the source of truth for the map.
+
+Hybrid (store catalogue, do not fan-out every pan to five CPO APIs) **remains**. The cache is the EE database, not a phone-only store.

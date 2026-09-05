@@ -5,13 +5,21 @@ EV drivers in Lithuania currently switch between Ignitis, Elinta, Tesla, and ret
 
 ## How it should work (product target)
 1. User signs in and registers a vehicle (connector type, battery, range).
-2. App shows nearby stations from a local database (fast map) and refreshes availability on demand.
-3. For a trip, the app calculates whether range is enough and inserts compatible fast-charge stops.
-4. At a station the user starts a session in-app, watches kWh/cost, then pays via device wallet (Apple Pay / Google Pay) through Stripe.
+2. App shows stations **only from our API**. The server aggregates CPO/OCPI/national feeds, deduplicates, and stores last-known occupancy (PRD §10, DFD).
+3. For a trip, the **server** (later) calculates range and compatible stops; lab trip is a device sketch.
+4. At a station the user starts a session in-app, then pays via device wallet through Stripe.
 
 ## UX goals
+First driver feedback (2026-09-05), in order:
+1. See **prices on the map** without opening every station.
+2. Filter by **power** and **maximum price** (€/kWh).
+3. On a chosen station, see **occupancy** (free / busy / charging).
+4. **Start charging in this app** and **watch progress** (kWh, time, running cost).
+
+These outrank trip polish, iOS, and store listing. Lab today: pins and min-kW filter exist; **no pin price**, **no max-price filter**, occupancy **UNKNOWN**, Start/Stop is a lab estimate.
+
 - Map and list load quickly even with many stations (hybrid cache, not live fan-out to every CPO).
-- Availability and price visible before the user drives there (AFIR price transparency) — **not true yet** (occupancy UNKNOWN).
+- Availability and price visible before the user drives there (AFIR) — **not true yet**.
 - Clear map chrome: search + compact filters next to zoom, Google Maps underneath.
 
 ## What users can do today (lab build, SM-T585)

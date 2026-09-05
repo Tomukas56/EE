@@ -69,28 +69,39 @@ class RouteService {
       to = directions.destination;
       path = directions.path;
     } else {
-      final nominatimFrom = await _nominatim(start);
-      final nominatimTo = await _nominatim(end);
-      if (nominatimFrom == null || nominatimTo == null) {
-        throw Exception('Could not find those places');
+      final geocodedFrom = await _geocode(start);
+      final geocodedTo = await _geocode(end);
+      if (geocodedFrom == null || geocodedTo == null) {
+        throw Exception(
+          'Could not find "${geocodedFrom == null ? origin : destination}". '
+          'Try a city name such as Vilnius or Riga.',
+        );
       }
-      from = RoutePoint(nominatimFrom.lat, nominatimFrom.lng);
-      to = RoutePoint(nominatimTo.lat, nominatimTo.lng);
-      final straight = distanceKmBetween(from.lat, from.lng, to.lat, to.lng);
-      distanceKm = straight * 1.3;
-      duration = Duration(minutes: (distanceKm / 80 * 60).round().clamp(1, 24 * 60));
-      path = [from, to];
+      from = geocodedFrom;
+      to = geocodedTo;
+      final osrm = await _osrmRoute(from, to);
+      if (osrm != null) {
+        distanceKm = osrm.distanceKm;
+        duration = osrm.duration;
+        path = osrm.path;
+      } else {
+        final straight = distanceKmBetween(from.lat, from.lng, to.lat, to.lng);
+        distanceKm = straight * 1.3;
+        duration = Duration(
+          minutes: (distanceKm / 80 * 60).round().clamp(1, 24 * 60),
+        );
+        path = [from, to];
+      }
     }
 
     final rangeKm = vehicle?.maxRangeKm ?? 300;
     final usableKm = rangeKm * 0.8;
     Station? stop;
     if (distanceKm > usableKm) {
-      final type = vehicle?.filterType;
       final candidates = stations.where((station) {
         if (!hasCoordinates(station)) return false;
-        if (type == null || station.connectorTypes.isEmpty) return true;
-        return station.connectorTypes.contains(type);
+        if (vehicle == null) return true;
+        return vehicle.matchesStationPlugs(station.connectorTypes);
       }).toList();
       final mid = path.length >= 2
           ? path[path.length ~/ 2]
@@ -107,8 +118,10 @@ class RouteService {
         : (distanceKm / vehicle.maxRangeKm) * vehicle.batteryCapacityKWh;
     final cost = energy * _labEurPerKwh;
     final summary = stop == null
-        ? 'Within estimated range — no charging stop needed'
-        : 'Suggested stop: ${stop.name}. Tap Navigate to open driving directions.';
+        ? vehicle == null
+            ? 'Within estimated 300 km default range — no charging stop needed'
+            : 'Within ${vehicle.label} range (${rangeKm.toStringAsFixed(0)} km) — no charging stop needed'
+        : 'Suggested ${vehicle?.connectorType ?? ''} stop: ${stop.name}. Tap Navigate.';
 
     return PlannedRoute(
       distanceKm: distanceKm,
@@ -136,6 +149,92 @@ class RouteService {
       }
     }
     return [...path.sublist(0, bestIndex), stop, ...path.sublist(bestIndex)];
+  }
+
+  static const _httpHeaders = {
+    'User-Agent': 'EnergyEniwhere/1.0 (com.eniwhere.energy; lab)',
+    'Accept': 'application/json',
+  };
+
+  static const _labPlaces = <String, RoutePoint>{
+    'vilnius': RoutePoint(54.6872, 25.2797),
+    'kaunas': RoutePoint(54.8985, 23.9036),
+    'klaipeda': RoutePoint(55.7033, 21.1443),
+    'siauliai': RoutePoint(55.9349, 23.3137),
+    'panevezys': RoutePoint(55.7374, 24.3703),
+    'riga': RoutePoint(56.9496, 24.1052),
+    'ryga': RoutePoint(56.9496, 24.1052),
+    'liepaja': RoutePoint(56.5047, 21.0108),
+    'daugavpils': RoutePoint(55.8747, 26.5362),
+    'tallinn': RoutePoint(59.4370, 24.7536),
+    'talinas': RoutePoint(59.4370, 24.7536),
+    'tartu': RoutePoint(58.3780, 26.7290),
+    'parnu': RoutePoint(58.3859, 24.4971),
+    'warsaw': RoutePoint(52.2297, 21.0122),
+    'varsuva': RoutePoint(52.2297, 21.0122),
+    'krakow': RoutePoint(50.0647, 19.9450),
+    'gdansk': RoutePoint(54.3520, 18.6466),
+  };
+
+  RoutePoint? _labPlace(String query) {
+    final folded = foldSearchText(query.trim());
+    if (folded.isEmpty) return null;
+    final primary = folded.split(RegExp(r'[,/]')).first.trim();
+    final exact = _labPlaces[primary] ?? _labPlaces[folded];
+    if (exact != null) return exact;
+    for (final entry in _labPlaces.entries) {
+      if (primary.startsWith(entry.key) ||
+          (entry.key.startsWith(primary) && primary.length >= 3)) {
+        return entry.value;
+      }
+    }
+    return null;
+  }
+
+  Future<RoutePoint?> _geocode(String query) async {
+    final local = _labPlace(query);
+    if (local != null) return local;
+    return await _nominatim(query) ?? await _photon(query);
+  }
+
+  Future<
+      ({
+        double distanceKm,
+        Duration duration,
+        List<RoutePoint> path,
+      })?> _osrmRoute(RoutePoint from, RoutePoint to) async {
+    try {
+      final uri = Uri.https(
+        'router.project-osrm.org',
+        '/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}',
+        {
+          'overview': 'simplified',
+          'geometries': 'polyline',
+        },
+      );
+      final response = await http
+          .get(uri, headers: _httpHeaders)
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200) return null;
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      if (body['code'] != 'Ok') return null;
+      final routes = body['routes'] as List<dynamic>?;
+      if (routes == null || routes.isEmpty) return null;
+      final route = routes.first as Map<String, dynamic>;
+      final encoded = route['geometry'] as String?;
+      final meters = (route['distance'] as num?)?.toDouble() ?? 0;
+      final seconds = (route['duration'] as num?)?.toDouble() ?? 0;
+      final path = encoded == null || encoded.isEmpty
+          ? <RoutePoint>[from, to]
+          : decodePolyline(encoded);
+      return (
+        distanceKm: meters / 1000,
+        duration: Duration(seconds: seconds.round().clamp(1, 24 * 3600).toInt()),
+        path: path,
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<
@@ -214,24 +313,50 @@ class RouteService {
     }
   }
 
-  Future<({double lat, double lng})?> _nominatim(String query) async {
+  Future<RoutePoint?> _nominatim(String query) async {
     try {
       final uri = Uri.https('nominatim.openstreetmap.org', '/search', {
         'q': query,
         'format': 'json',
         'limit': '1',
+        'countrycodes': 'lt,lv,ee,pl',
       });
-      final response = await http.get(
-        uri,
-        headers: const {'User-Agent': 'EnergyEniwhere/1.0 (lab)'},
-      ).timeout(const Duration(seconds: 8));
+      final response = await http
+          .get(uri, headers: _httpHeaders)
+          .timeout(const Duration(seconds: 8));
       if (response.statusCode != 200) return null;
       final list = jsonDecode(response.body) as List<dynamic>;
       if (list.isEmpty) return null;
       final row = list.first as Map<String, dynamic>;
-      return (
-        lat: double.parse(row['lat'] as String),
-        lng: double.parse(row['lon'] as String),
+      return RoutePoint(
+        double.parse(row['lat'] as String),
+        double.parse(row['lon'] as String),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<RoutePoint?> _photon(String query) async {
+    try {
+      final uri = Uri.https('photon.komoot.io', '/api', {
+        'q': query,
+        'limit': '1',
+      });
+      final response = await http
+          .get(uri, headers: _httpHeaders)
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200) return null;
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final features = body['features'] as List<dynamic>?;
+      if (features == null || features.isEmpty) return null;
+      final geometry = (features.first as Map<String, dynamic>)['geometry']
+          as Map<String, dynamic>?;
+      final coords = geometry?['coordinates'] as List<dynamic>?;
+      if (coords == null || coords.length < 2) return null;
+      return RoutePoint(
+        (coords[1] as num).toDouble(),
+        (coords[0] as num).toDouble(),
       );
     } catch (_) {
       return null;

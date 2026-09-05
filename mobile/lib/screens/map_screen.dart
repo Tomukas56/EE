@@ -15,6 +15,8 @@ import '../services/location_service.dart';
 import '../utils/geo.dart';
 import '../widgets/arrival_check_sheet.dart';
 import '../widgets/map_filter_rail.dart';
+import '../widgets/osm_tile_layer.dart';
+import '../widgets/price_map_pin.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   final bool focusNearest;
@@ -41,6 +43,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   DevicePosition? _me;
   final Set<String> _promptedArrival = {};
   bool _useGoogleMap = AppConfig.useGoogleMaps;
+  final PricePinCache _pinCache = PricePinCache();
 
   @override
   void initState() {
@@ -302,24 +305,34 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       visible = [...visible, selected];
     }
     if (!mounted) return;
-    final next = <gmaps.Marker>{
-      for (final station in visible)
+    final showPrice = _zoom >= pricePinMinZoom;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final next = <gmaps.Marker>{};
+    for (final station in visible) {
+      final icon = await _pinCache.icon(
+        pixelRatio: dpr,
+        selected: selected?.id == station.id,
+        live: station.hasLiveOccupancy,
+        available: station.availableConnectors > 0,
+        priceLabel: showPrice ? station.tariffPinLabel : null,
+      );
+      if (!mounted) return;
+      next.add(
         gmaps.Marker(
           markerId: gmaps.MarkerId(station.id),
           position: gmaps.LatLng(station.latitude!, station.longitude!),
           infoWindow: const gmaps.InfoWindow(),
           consumeTapEvents: true,
-          icon: gmaps.BitmapDescriptor.defaultMarkerWithHue(
-            selected?.id == station.id
-                ? gmaps.BitmapDescriptor.hueOrange
-                : gmaps.BitmapDescriptor.hueAzure,
-          ),
+          icon: icon,
+          anchor: const Offset(0.5, 1),
           onTap: () => _selectStation(station, moveCamera: false),
         ),
-    };
+      );
+    }
     final sameIds = next.length == _markers.length &&
         next.every((marker) => _markers.any((m) => m.markerId == marker.markerId && m.icon == marker.icon));
     if (sameIds) return;
+    if (!mounted) return;
     setState(() {
       _markers
         ..clear()
@@ -400,12 +413,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         },
       ),
       children: [
-        TileLayer(
-          urlTemplate:
-              'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-          userAgentPackageName: 'lt.energyeniwhere.mobile',
-          retinaMode: true,
-        ),
+        const OsmTileLayer(),
         if (_me != null)
           CircleLayer(
             circles: [
@@ -427,12 +435,46 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 radius: destination?.id == station.id ? 10 : 5,
                 color: destination?.id == station.id
                     ? const Color(0xFFFF6B35)
-                    : const Color(0xFF0066FF).withValues(alpha: 0.85),
+                    : station.hasLiveOccupancy &&
+                            station.availableConnectors > 0
+                        ? const Color(0xFF2EAD4B)
+                        : station.hasLiveOccupancy
+                            ? const Color(0xFFE53935)
+                            : const Color(0xFF0066FF).withValues(alpha: 0.85),
                 borderStrokeWidth: destination?.id == station.id ? 3 : 1,
                 borderColor: Colors.white,
               ),
           ],
         ),
+        if (_zoom >= pricePinMinZoom)
+          MarkerLayer(
+            markers: [
+              for (final station in osmPins)
+                if (station.tariffPinLabel != null)
+                  Marker(
+                    point: LatLng(station.latitude!, station.longitude!),
+                    width: 56,
+                    height: 22,
+                    alignment: Alignment.bottomCenter,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF111111),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          station.tariffPinLabel!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+            ],
+          ),
         if (_me != null)
           MarkerLayer(
             markers: [
@@ -447,7 +489,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         const RichAttributionWidget(
           alignment: AttributionAlignment.bottomLeft,
           attributions: [
-            TextSourceAttribution('© OpenStreetMap, © CARTO'),
+            TextSourceAttribution('© OpenStreetMap'),
           ],
         ),
       ],
@@ -886,7 +928,13 @@ class _StationPeekCardState extends State<_StationPeekCard> {
                           _PeekChip(station.countryCode!),
                         if (station.operatorName != null)
                           _PeekChip(station.operatorName!),
-                        _PeekChip('${station.connectorCount} connectors'),
+                        if (station.hasLiveOccupancy)
+                          _PeekChip(
+                            '${station.availableConnectors}/${station.connectorCount} free',
+                          )
+                        else
+                          _PeekChip('${station.connectorCount} connectors'),
+                        if (station.tariff != null) _PeekChip(station.tariff!),
                         if (widget.distanceKm != null)
                           _PeekChip(
                             '${widget.distanceKm!.toStringAsFixed(1)} km',

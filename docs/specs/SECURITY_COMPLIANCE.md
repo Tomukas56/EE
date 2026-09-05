@@ -205,7 +205,7 @@ Lab-only: owner PIN (`X-Owner-Pin`), cleartext LAN API, debug Google Maps key. T
 ## 6. Roadmap (compliance, not feature work)
 
 1. **Immediately (before any store listing):** security contact, CVD page, Art. 14 playbook (CSIRT-LT + ENISA platform), disable lab PIN and cleartext in release flavour.  
-2. **With first production backend:** HTTPS, JWT/OIDC on mutating APIs, Keystore session, privacy policy + DSR.  
+2. **With first production backend:** HTTPS, JWT/OIDC on mutating APIs, Keystore session, privacy policy + DSR. Email + Argon2id + TOTP 2FA as **PRD §11** — not during lab map/trip QA.  
 3. **Before first payment:** Stripe test → live, Payment Sheet, SAQ A evidence, no PAN in logs.  
 4. **Continuous:** SBOM per release, dependency CVE gate, CRA risk assessment updates.  
 5. **By 11 Dec 2027 (if EE is on the Union market):** Module A (or notified body if reclassified), technical documentation, EU declaration of conformity, CE marking, support-period date on the listing.

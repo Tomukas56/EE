@@ -34,7 +34,8 @@ CRA due diligence also covers remote processing and runtimes. These are **not** 
 | Node.js v23.11.0 | API runtime | Lab host; production runtime TBD |
 | Flutter 3.32.8 / Dart 3.8.1 | App SDK | Pinned for macOS 13; do not `flutter upgrade` here |
 | PostgreSQL 18 (`postgres:18-alpine` via Colima Compose, port 5433) | Station/session data | Lab live DB. `./scripts/db-up.sh`. Postgres.app is not required |
-| Open Charge Map | Station POI sync | Static catalogue; occupancy not live |
+| Via Lietuva open OCPI | LT locations, status, tariffs | Official NAP, CC BY 4.0; server POLL only |
+| Open Charge Map | Station POI sync | LV/EE/PL (LT fallback); occupancy not live |
 | Google Maps Platform | Map tiles / Directions | API key in the client — restrict before store |
 | Firebase Auth / Google Sign-In | Account | Android `oauth_client` empty until SHA-1 in console |
 | Stripe | Payments (skeleton) | `STRIPE_SECRET_KEY` empty; no live charges |

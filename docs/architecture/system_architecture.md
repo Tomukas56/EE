@@ -1,5 +1,11 @@
 # System Architecture & Technology Stack
 
+**Production target (2026-09-03):** [docs/PRD.md](../PRD.md) §10 and [specs/DFD.md](../specs/DFD.md) — FastAPI on OVH VPS, PostGIS, connectors, last-known occupancy. The Flutter app does not call CPO APIs.
+
+**Lab today:** Node.js Express + Prisma + PostgreSQL (no PostGIS). Occupancy UNKNOWN. OCM pull only.
+
+---
+
 ## 1. Technology Stack
 
 ### 1.1 Mobile Application (Frontend)

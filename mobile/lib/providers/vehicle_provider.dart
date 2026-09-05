@@ -7,17 +7,26 @@ import '../models/vehicle.dart';
 const _vehicleKey = 'ee.vehicle.profile';
 
 class VehicleNotifier extends StateNotifier<Vehicle?> {
-  VehicleNotifier() : super(null) {
-    _load();
+  VehicleNotifier({Vehicle? initial}) : super(initial) {
+    if (initial == null) {
+      _load();
+    }
+  }
+
+  static Future<Vehicle?> readSaved() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_vehicleKey);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      return Vehicle.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_vehicleKey);
-    if (raw == null || raw.isEmpty) return;
-    try {
-      state = Vehicle.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-    } catch (_) {}
+    final vehicle = await readSaved();
+    if (vehicle != null) state = vehicle;
   }
 
   Future<void> save(Vehicle vehicle) async {

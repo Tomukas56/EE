@@ -73,37 +73,59 @@ class StationCard extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: station.availableConnectors > 0
-                          ? Colors.green.shade50
-                          : Colors.red.shade50,
+                      color: !station.hasLiveOccupancy
+                          ? Colors.blueGrey.shade50
+                          : station.availableConnectors > 0
+                              ? Colors.green.shade50
+                              : Colors.red.shade50,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: station.availableConnectors > 0
-                            ? Colors.green
-                            : Colors.red,
+                        color: !station.hasLiveOccupancy
+                            ? Colors.blueGrey
+                            : station.availableConnectors > 0
+                                ? Colors.green
+                                : Colors.red,
                       ),
                     ),
                     child: Text(
-                      '${station.availableConnectors}/${station.connectorCount} Available',
+                      station.hasLiveOccupancy
+                          ? '${station.availableConnectors}/${station.connectorCount} Available'
+                          : '${station.connectorCount} connectors',
                       style: TextStyle(
-                        color: station.availableConnectors > 0
-                            ? Colors.green.shade900
-                            : Colors.red.shade900,
+                        color: !station.hasLiveOccupancy
+                            ? Colors.blueGrey.shade900
+                            : station.availableConnectors > 0
+                                ? Colors.green.shade900
+                                : Colors.red.shade900,
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
                       ),
                     ),
                   ),
+                  if (station.tariff != null) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      station.tariff!,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                   const Spacer(),
 
                   // Status Icon
                   Icon(
-                    station.availableConnectors > 0
+                    !station.hasLiveOccupancy
                         ? Icons.ev_station
-                        : Icons.block,
-                    color: station.availableConnectors > 0
-                        ? Colors.green
-                        : Colors.red,
+                        : station.availableConnectors > 0
+                            ? Icons.ev_station
+                            : Icons.block,
+                    color: !station.hasLiveOccupancy
+                        ? Colors.blueGrey
+                        : station.availableConnectors > 0
+                            ? Colors.green
+                            : Colors.red,
                   ),
                 ],
               ),

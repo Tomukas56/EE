@@ -8,7 +8,7 @@ Tablet QA on SM-T585 accepted this lab chrome:
 - Root: Stations · Trip · **Payments** · Account. Menu titles stay the same size (Owner review subtitle no longer shrinks the tile).
 - Trip: route map + Navigate. Sign out closes the app.
 
-Do **not** claim done: live Stripe/PCI, OCPI occupancy, iOS, CRA/CE, production HTTPS, Maps key restriction, User JWT.
+Do **not** claim done: live Stripe/PCI, OCPI occupancy, iOS, CRA/CE, production HTTPS, Maps key restriction, User JWT, **§11 2FA** (specified only — do not implement during lab QA).
 
 ## Decisions this session
 - Map filters stay on the **right** with zoom/location. Do not wrap `GoogleMap` in `Listener` / `GestureDetector`.
@@ -23,9 +23,18 @@ Do **not** claim done: live Stripe/PCI, OCPI occupancy, iOS, CRA/CE, production 
 - DB: Compose on **127.0.0.1:5433** (`./scripts/db-up.sh`)
 - Tablet: SM-T585 — `adb reverse tcp:3000 tcp:3000`
 
+## User accents (2026-09-05) — above other product work
+1. **Prices on the map** (pin, not only detail)
+2. Filter by **power** and **max €/kWh**
+3. **Occupancy** on the chosen station
+4. **Start in this app** and live **progress** (kWh / time / cost)
+
+These need PRD §10 (tariff + last-known) then OCPI session. Do **not** implement §11 2FA during lab QA.
+
+## Via Lietuva (2026-09-05)
+Lab backend POLLs official `ev.vialietuva.lt/ocpi/2.3.0` (locations + tariffs, CC BY 4.0). App still talks only to our API. LT OCM rows are dropped when VL sync succeeds. Refresh every 5 minutes.
+
 ## Next work (priority)
-1. Continue tablet QA: Trip Navigate, Start/Stop, Payments
-2. Firebase SHA-1 + real Google Sign-In
-3. Stripe Payment Sheet only after HTTPS + test key
-4. CRA Art. 14 playbook before any store listing
-5. Tests; DEMO.md still overstates readiness
+1. Tablet QA of hybrid € pins and € min–max filter
+2. VPS / PostGIS still required for production Vartai B
+3. Real START/STOP + progress (U4) only after JWT + 2FA gates

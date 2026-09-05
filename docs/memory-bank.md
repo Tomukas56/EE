@@ -179,13 +179,10 @@
 ### Files Updated
 - ✅ `README.md` - Complete setup and API documentation
 - ✅ `docs/memory-bank.md` - This change log
-- ✅ `docs/specs/PRD.md` - Updated with Prisma implementation
-- ✅ `.gemini/walkthrough.md` - Implementation walkthrough
+- ✅ `docs/PRD.md` - Living product PRD (Prisma, §9–11). `docs/specs/PRD.md` removed as a duplicate (2026-09-03).
 
 ### Files to Update (Mobile Phase)
-- `docs/specs/DFD.md` - Add mobile app data flows
-- `docs/API.md` - Detailed API specification with examples
-- `docs/DEPLOYMENT.md` - Production deployment guide
+- Production DFD is `docs/specs/DFD.md` (not a separate API.md / DEPLOYMENT.md)
 
 ---
 

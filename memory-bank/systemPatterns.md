@@ -1,9 +1,12 @@
 # System Patterns
 
 ## Architecture
-Hybrid aggregator (ADR-001):
-- **Static data** (name, address, lat/lng, connectors) stored in PostgreSQL, synced periodically from Open Charge Map.
-- **Dynamic data** (availability) is specified as on-demand CPO fetch — currently occupancy is **UNKNOWN**.
+**Production (PRD §10):** app never calls CPO APIs. Connectors → Sync → Normalizer → Duplicate Resolver → PostgreSQL/PostGIS → our REST API → Flutter. Last-known occupancy + `last_updated`. DFD: `docs/specs/DFD.md`. Target host: OVH VPS, FastAPI, Nginx, Docker.
+
+**Lab (today):**
+Hybrid aggregator (ADR-001, occupancy path updated 2026-09-03):
+- **Static data** from Open Charge Map into PostgreSQL.
+- **Dynamic data** specified as last-known in EE DB — currently occupancy is **UNKNOWN** (no CPO PUSH/POLL yet).
 
 ```
 Flutter app  --HTTP-->  Express API  -->  Prisma  -->  PostgreSQL
@@ -28,9 +31,9 @@ Flutter app  --HTTP-->  Express API  -->  Prisma  -->  PostgreSQL
 - Firebase Auth is not a store-ready OIDC flow until SHA-1 is in Firebase
 
 ## Data rules
-- No PostGIS in the live schema (lat/lng `Decimal`). Distance filters computed in the app.
+- No PostGIS in the **lab** schema (lat/lng `Decimal`). Production requires PostGIS (PRD §10).
 - Public `GET /api/stations` omits pending crowd pins until owner PIN confirm.
 
 ## Known repo quirks
 - Task Master is initialized but has **no tasks**.
-- `docs/DEMO.md` and older READMEs still describe 7 mock stations / History tile — treat `progress.md` as honest status.
+- Treat `progress.md` as honest status (not old “85% / 7 mock stations” claims).

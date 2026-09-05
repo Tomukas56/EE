@@ -108,7 +108,9 @@ export class CPOService {
         return [...this.countries];
     }
 
-    async fetchStations(): Promise<{ stations: StationData[]; fetchedCountries: string[] }> {
+    async fetchStations(options?: {
+        excludeCountries?: string[];
+    }): Promise<{ stations: StationData[]; fetchedCountries: string[] }> {
         if (!this.apiKey) {
             throw new Error("CPOAPI is not set — cannot fetch Open Charge Map data");
         }
@@ -121,7 +123,12 @@ export class CPOService {
         const merged: StationData[] = [];
         const fetchedCountries: string[] = [];
 
+        const skip = new Set(
+            (options?.excludeCountries || []).map((code) => code.toUpperCase()),
+        );
+
         for (const country of this.countries) {
+            if (skip.has(country)) continue;
             try {
                 const pois = await this.getJson<OcmPoi[]>(
                     `poi/?output=json&countrycode=${encodeURIComponent(country)}` +

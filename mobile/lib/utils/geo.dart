@@ -18,6 +18,9 @@ const nearbyMinRadiusKm = 0.1;
 const nearbyMaxRadiusKm = 2.4;
 const nearbyZoomStep = 1.0;
 
+/// Show € on pins only at street zoom; farther out = colour only.
+const pricePinMinZoom = 16.0;
+
 /// Viewing radius grows when zooming out (300 m at zoom 17).
 double radiusKmForZoom(double zoom) {
   final km = nearbyRadiusKm * pow(2, nearbyZoom - zoom);

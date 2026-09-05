@@ -28,6 +28,12 @@ backend/.env
 # OS specific
 .DS_Store
 
+# Accidental tsc emit next to TypeScript (outDir is backend/dist)
+backend/src/**/*.js
+backend/src/**/*.js.map
+backend/src/**/*.d.ts
+backend/src/**/*.d.ts.map
+
 # Accidental nested Windows OneDrive copy of this repo
 /OneDrive - teltonika.lt/
 

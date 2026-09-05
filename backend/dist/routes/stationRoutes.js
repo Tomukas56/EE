@@ -1,6 +1,9 @@
 import express, {} from 'express';
+import escapeHtml from 'escape-html';
 import prisma from '../lib/prisma.js';
 const router = express.Router();
+/** Station.id is Prisma @default(uuid()). Reject anything else before it reaches HTML. */
+const STATION_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 function wantsJson(req) {
     const accept = req.get('accept') ?? '';
     return accept.includes('application/json');
@@ -8,20 +11,29 @@ function wantsJson(req) {
 function isBrowserDocument(req) {
     return req.get('sec-fetch-dest') === 'document' && !wantsJson(req);
 }
-function escapeHtml(value) {
-    return value
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+function catalogueSource(externalId) {
+    if (externalId?.startsWith('vl:'))
+        return 'via_lietuva';
+    if (externalId?.startsWith('ocm:'))
+        return 'ocm';
+    if (externalId?.startsWith('user:'))
+        return 'user';
+    return 'unknown';
 }
-function page(title, body) {
+function displayTariff(connectors) {
+    const prices = connectors
+        .map((c) => c.tariff)
+        .filter((t) => Boolean(t));
+    return prices[0] ?? null;
+}
+/** `escapedTitle` and `body` must already be HTML-escaped / trusted markup. */
+function page(escapedTitle, body) {
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>${escapeHtml(title)}</title>
+  <title>${escapedTitle}</title>
   <style>
     :root { color-scheme: light; }
     body { font-family: system-ui, sans-serif; margin: 0; background: #f4f7fb; color: #122; }
@@ -69,6 +81,9 @@ router.get('/', async (req, res) => {
             available_connectors: station.connectors.filter(c => c.status === 'AVAILABLE').length,
             connector_types: [...new Set(station.connectors.map(c => c.type))],
             max_power_kw: station.connectors.reduce((max, c) => Math.max(max, Number(c.max_power_kw) || 0), 0),
+            tariff: displayTariff(station.connectors),
+            source: catalogueSource(station.external_id),
+            last_synced_at: station.last_synced_at?.toISOString() ?? null,
         }));
         if (isBrowserDocument(req)) {
             const rows = response.map(station => `
@@ -79,10 +94,10 @@ router.get('/', async (req, res) => {
                 <td>${escapeHtml(station.address)}</td>
                 <td>${station.connector_count}</td>
               </tr>`).join('');
-            res.type('html').send(page('Energy Eniwhere — Stations', `
+            res.type('html').send(page(escapeHtml('Energy Eniwhere — Stations'), `
               <header>
                 <h1>Energy Eniwhere</h1>
-                <p>${response.length} charging stations from Open Charge Map (LT, LV, EE, PL). Occupancy is not live.</p>
+                <p>${response.length} stations. Lithuania occupancy/prices: Via Lietuva open OCPI (CC BY 4.0). LV/EE/PL: Open Charge Map.</p>
               </header>
               <main>
                 <input id="q" type="search" placeholder="Filter by name, operator, address…" oninput="filterRows()"/>
@@ -114,9 +129,9 @@ router.get('/', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
     try {
-        const id = req.params.id;
-        if (!id) {
-            return res.status(400).json({ error: 'Station id is required' });
+        const id = String(req.params.id ?? '').trim();
+        if (!STATION_UUID.test(id)) {
+            return res.status(400).json({ error: 'Invalid station id' });
         }
         const station = await prisma.station.findUnique({
             where: { id },
@@ -144,27 +159,13 @@ router.get('/:id', async (req, res) => {
                 max_power_kw: Number(connector.max_power_kw),
                 status: connector.status,
                 tariff: connector.tariff
-            }))
+            })),
+            tariff: displayTariff(station.connectors),
+            source: catalogueSource(station.external_id),
+            last_synced_at: station.last_synced_at?.toISOString() ?? null,
         };
-        if (isBrowserDocument(req)) {
-            const connectors = response.connectors.map(c => `<span class="badge">${escapeHtml(c.type)} ${c.max_power_kw} kW · ${escapeHtml(c.status)}</span>`).join('');
-            res.type('html').send(page(station.name, `
-              <header>
-                <h1>${escapeHtml(station.name)}</h1>
-                <p><a href="/api/stations" style="color:#fff">← All stations</a></p>
-              </header>
-              <main>
-                <div class="card">
-                  <p><strong>Operator:</strong> ${escapeHtml(station.operator_name || '—')}</p>
-                  <p><strong>Address:</strong> ${escapeHtml(station.address)}</p>
-                  <p class="muted">${station.latitude ?? '—'}, ${station.longitude ?? '—'}</p>
-                  ${station.website ? `<p><a href="${escapeHtml(station.website)}">${escapeHtml(station.website)}</a></p>` : ''}
-                  <div class="conn">${connectors || '<span class="muted">No mapped connectors</span>'}</div>
-                </div>
-              </main>
-            `));
-            return;
-        }
+        // JSON only: interpolating req.params.id / looked-up fields into HTML
+        // is the XSS sink Snyk Code flags (HTTP parameter → res.send).
         res.json(response);
     }
     catch (error) {

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../models/app_user.dart';
 import '../providers/auth_provider.dart';
 import '../screens/auth/splash_screen.dart';
 import '../screens/auth/welcome_screen.dart';
@@ -16,13 +17,18 @@ import '../screens/stations/mark_station_screen.dart';
 import '../screens/stations/owner_review_screen.dart';
 import '../screens/account/legal_account_screen.dart';
 
+bool _isFullSession(AppUser? user) =>
+    user != null && !user.limitedAccess;
+
 final goRouterProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
   ref.listen(sessionProvider, (previous, next) => refresh.value++);
   ref.onDispose(refresh.dispose);
 
+  final startHome = _isFullSession(ref.read(sessionProvider));
+
   return GoRouter(
-    initialLocation: '/splash',
+    initialLocation: startHome ? '/home' : '/splash',
     refreshListenable: refresh,
     redirect: (context, state) {
       final loc = state.matchedLocation;
@@ -53,8 +59,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => SplashScreen(
           onFinished: () {
             final user = ref.read(sessionProvider);
-            final signedIn = user != null && !user.limitedAccess;
-            context.go(signedIn ? '/home' : '/welcome');
+            context.go(_isFullSession(user) ? '/home' : '/welcome');
           },
         ),
       ),

@@ -28,23 +28,23 @@
 |------------|------|---------|-------|
 | Station list + detail | Required | Live API + UI | **Done** |
 | Map with pins | Required | Google Maps + station pins | **Done** (lab UI approved) |
-| Filters (type, kW, distance) | Required | Country, plug, min kW, search; radius via zoom | **Lab done** |
+| Filters (type, kW, distance) | Required | Country, plug, min kW, € min–max, search | **Lab done** |
 | Nearest station | Required | Map `nearest=1` | **Done** |
 | Auth (Google/Apple/email) | Required | Local device session; Firebase SHA-1 missing | **Lab only** |
 | Vehicle profile | Mandatory | Saved on device | **Lab done** |
 | Route planning | Core | Map + Directions or Nominatim + Navigate | **Lab done** |
 | Session start/stop | Core | Lab DB estimate, not CPO | **Lab done** |
 | Payments | Core | History = lab-estimate; wallet banner; no Stripe | **Partial** |
-| Real CPO / OCPI | Planned | OCM static POIs; occupancy UNKNOWN | **Partial** |
+| Real CPO / OCPI | Planned | Via Lietuva open OCPI (LT live status/price); OCM LV/EE/PL | **Lab partial** |
+| Online ingest (PRD §10) | Required for production | VL POLL on this Mac; no VPS/PostGIS | **Lab started** |
 | Users table / JWT | Architecture | reporter_id string only | **Not started** |
 | Tests | Engineering | `npm test` is a stub | **Not started** |
 | Docker Compose | Dev env | Colima + `./scripts/db-up.sh`, API on :5433 | **Lab done** |
 
-**Overall vs full PRD: ~35–40%.**  
+**Overall vs full PRD: ~45%.**  
 **Vs Phase-1 backend MVP (stations API): ~90%.**  
-Store, PCI, CRA, OCPI, iOS are not.
-
-Docs that say “85% / production-ready” overstate production readiness.
+Store, PCI, CRA, CPO start/stop, iOS are not.
 
 ## Left to build
-Tracked locally in `docs/specs/PROBLEMS.txt` (gitignored, not on GitHub).
+Driver accents U1–U4: `docs/specs/WORK_PLAN.md`, `docs/specs/PROBLEMS.txt` (gitignored).
+Tracked locally in `docs/specs/PROBLEMS.txt` (not on GitHub).

@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../config.dart';
 import '../../core/theme.dart';
 import '../../models/station.dart';
 import '../../providers/stations_provider.dart';
 import '../../providers/vehicle_provider.dart';
 import '../../services/route_service.dart';
+import '../../widgets/osm_tile_layer.dart';
 
 class RoutePlannerScreen extends ConsumerStatefulWidget {
   const RoutePlannerScreen({super.key});
@@ -21,11 +24,13 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
   final TextEditingController _startController = TextEditingController();
   final TextEditingController _endController = TextEditingController();
   final MapController _mapController = MapController();
+  gmaps.GoogleMapController? _googleMap;
   final _routeService = RouteService();
   PlannedRoute? _route;
   bool _loading = false;
   String? _error;
   bool _mapReady = false;
+  final bool _useGoogleMap = AppConfig.useGoogleMaps;
 
   @override
   void dispose() {
@@ -48,7 +53,54 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
     ];
   }
 
+  List<gmaps.LatLng> _googlePath(PlannedRoute route) {
+    return [
+      for (final point in route.path) gmaps.LatLng(point.lat, point.lng),
+    ];
+  }
+
   void _fitRoute(PlannedRoute route) {
+    if (_useGoogleMap) {
+      final points = _googlePath(route);
+      final controller = _googleMap;
+      if (points.isEmpty || controller == null) return;
+      try {
+        if (points.length == 1) {
+          controller.animateCamera(
+            gmaps.CameraUpdate.newLatLngZoom(points.first, 10),
+          );
+          return;
+        }
+        var minLat = points.first.latitude;
+        var maxLat = points.first.latitude;
+        var minLng = points.first.longitude;
+        var maxLng = points.first.longitude;
+        for (final point in points) {
+          if (point.latitude < minLat) minLat = point.latitude;
+          if (point.latitude > maxLat) maxLat = point.latitude;
+          if (point.longitude < minLng) minLng = point.longitude;
+          if (point.longitude > maxLng) maxLng = point.longitude;
+        }
+        if (maxLat - minLat < 0.02) {
+          minLat -= 0.05;
+          maxLat += 0.05;
+        }
+        if (maxLng - minLng < 0.02) {
+          minLng -= 0.05;
+          maxLng += 0.05;
+        }
+        controller.animateCamera(
+          gmaps.CameraUpdate.newLatLngBounds(
+            gmaps.LatLngBounds(
+              southwest: gmaps.LatLng(minLat, minLng),
+              northeast: gmaps.LatLng(maxLat, maxLng),
+            ),
+            48,
+          ),
+        );
+      } catch (_) {}
+      return;
+    }
     final points = _pathPoints(route);
     if (points.isEmpty || !_mapReady) return;
     try {
@@ -69,7 +121,12 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
       _error = null;
     });
     try {
-      final stations = await ref.read(stationsProvider.future);
+      var stations = <Station>[];
+      try {
+        stations = await ref.read(stationsProvider.future);
+      } catch (_) {
+        // Route still works without the catalog; charging stop is skipped.
+      }
       final vehicle = ref.read(vehicleProvider);
       final route = await _routeService.plan(
         origin: _startController.text,
@@ -86,10 +143,12 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
         if (mounted) _fitRoute(route);
       });
     } catch (error) {
+      debugPrint('Trip planner failed: $error');
       if (!mounted) return;
+      final message = error.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
       setState(() {
         _loading = false;
-        _error = error.toString();
+        _error = message;
         _route = null;
       });
     }
@@ -163,7 +222,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                   child: Text(
                     vehicle == null
                         ? 'No vehicle saved — using 300 km default range'
-                        : '${vehicle.label} · ${vehicle.maxRangeKm.toStringAsFixed(0)} km',
+                        : 'Active vehicle: ${vehicle.label} · ${vehicle.specsLine}',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
@@ -274,70 +333,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
     final stop = route.chargingStop;
     return Column(
       children: [
-        Expanded(
-          child: FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: points.isEmpty
-                  ? const LatLng(55.2, 24.0)
-                  : points[points.length ~/ 2],
-              initialZoom: 6.5,
-              onMapReady: () {
-                _mapReady = true;
-                _fitRoute(route);
-              },
-            ),
-            children: [
-              TileLayer(
-                urlTemplate:
-                    'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                userAgentPackageName: 'lt.energyeniwhere.mobile',
-                retinaMode: true,
-              ),
-              if (points.length >= 2)
-                PolylineLayer(
-                  polylines: [
-                    Polyline(
-                      points: points,
-                      color: const Color(0xFF0066FF),
-                      strokeWidth: 4,
-                    ),
-                  ],
-                ),
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point: LatLng(route.origin.lat, route.origin.lng),
-                    width: 40,
-                    height: 40,
-                    child: const Icon(Icons.trip_origin, color: Color(0xFF00C48C)),
-                  ),
-                  if (stop != null &&
-                      stop.latitude != null &&
-                      stop.longitude != null)
-                    Marker(
-                      point: LatLng(stop.latitude!, stop.longitude!),
-                      width: 40,
-                      height: 40,
-                      child: const Icon(Icons.ev_station, color: Color(0xFFFF6B35)),
-                    ),
-                  Marker(
-                    point: LatLng(route.destination.lat, route.destination.lng),
-                    width: 40,
-                    height: 40,
-                    child: const Icon(Icons.flag, color: Color(0xFF0066FF)),
-                  ),
-                ],
-              ),
-              const RichAttributionWidget(
-                alignment: AttributionAlignment.bottomLeft,
-                attributions: [
-                  TextSourceAttribution('© OpenStreetMap, © CARTO'),
-                ],
-              ),
-            ],
-          ),
-        ),
+        Expanded(child: _buildRouteMap(route, points, stop)),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
           child: Column(
@@ -358,6 +354,120 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
               ],
             ],
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRouteMap(
+    PlannedRoute route,
+    List<LatLng> points,
+    Station? stop,
+  ) {
+    final mid = points.isEmpty
+        ? const LatLng(55.2, 24.0)
+        : points[points.length ~/ 2];
+    if (_useGoogleMap) {
+      final gPath = _googlePath(route);
+      final markers = <gmaps.Marker>{
+        gmaps.Marker(
+          markerId: const gmaps.MarkerId('origin'),
+          position: gmaps.LatLng(route.origin.lat, route.origin.lng),
+          infoWindow: const gmaps.InfoWindow(title: 'Start'),
+        ),
+        gmaps.Marker(
+          markerId: const gmaps.MarkerId('destination'),
+          position: gmaps.LatLng(route.destination.lat, route.destination.lng),
+          infoWindow: const gmaps.InfoWindow(title: 'Destination'),
+        ),
+        if (stop != null && stop.latitude != null && stop.longitude != null)
+          gmaps.Marker(
+            markerId: const gmaps.MarkerId('stop'),
+            position: gmaps.LatLng(stop.latitude!, stop.longitude!),
+            infoWindow: gmaps.InfoWindow(title: stop.name),
+          ),
+      };
+      return gmaps.GoogleMap(
+        key: const ValueKey('ee-trip-google-map'),
+        initialCameraPosition: gmaps.CameraPosition(
+          target: gmaps.LatLng(mid.latitude, mid.longitude),
+          zoom: 6.5,
+        ),
+        polylines: gPath.length >= 2
+            ? {
+                gmaps.Polyline(
+                  polylineId: const gmaps.PolylineId('route'),
+                  points: gPath,
+                  color: const Color(0xFF0066FF),
+                  width: 5,
+                ),
+              }
+            : const <gmaps.Polyline>{},
+        markers: markers,
+        myLocationEnabled: false,
+        myLocationButtonEnabled: false,
+        compassEnabled: true,
+        mapToolbarEnabled: false,
+        zoomControlsEnabled: false,
+        onMapCreated: (controller) {
+          _googleMap = controller;
+          _fitRoute(route);
+        },
+      );
+    }
+
+    return FlutterMap(
+      mapController: _mapController,
+      options: MapOptions(
+        initialCenter: mid,
+        initialZoom: 6.5,
+        onMapReady: () {
+          _mapReady = true;
+          _fitRoute(route);
+        },
+      ),
+      children: [
+        const OsmTileLayer(),
+        if (points.length >= 2)
+          PolylineLayer(
+            polylines: [
+              Polyline(
+                points: points,
+                color: const Color(0xFF0066FF),
+                strokeWidth: 4,
+              ),
+            ],
+          ),
+        MarkerLayer(
+          markers: [
+            Marker(
+              point: LatLng(route.origin.lat, route.origin.lng),
+              width: 40,
+              height: 40,
+              child: const Icon(Icons.trip_origin, color: Color(0xFF00C48C)),
+            ),
+            if (stop != null &&
+                stop.latitude != null &&
+                stop.longitude != null)
+              Marker(
+                point: LatLng(stop.latitude!, stop.longitude!),
+                width: 40,
+                height: 40,
+                child: const Icon(Icons.ev_station, color: Color(0xFFFF6B35)),
+              ),
+            Marker(
+              point: LatLng(route.destination.lat, route.destination.lng),
+              width: 40,
+              height: 40,
+              child: const Icon(Icons.flag, color: Color(0xFF0066FF)),
+            ),
+          ],
+        ),
+        const RichAttributionWidget(
+          alignment: AttributionAlignment.bottomLeft,
+          attributions: [
+            TextSourceAttribution('© OpenStreetMap'),
+          ],
         ),
       ],
     );

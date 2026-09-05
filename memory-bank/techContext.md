@@ -29,3 +29,6 @@ cd mobile && flutter run -d 330039b62585a5df
 ```
 
 Lab path: Welcome (Agreement + Google / Skip) → Menu → Stations → Map of stations.
+
+## Production target (not this Mac)
+PRD §10 / `docs/specs/DFD.md`: OVH VPS 2 vCPU / 4 GB, Ubuntu, Docker, Nginx, **FastAPI**, PostgreSQL+PostGIS, Redis optional. App talks only to that API.

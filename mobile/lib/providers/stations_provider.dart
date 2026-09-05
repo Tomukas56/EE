@@ -48,6 +48,26 @@ const powerFilters = <({double kw, String label})>[
 final connectorFilterProvider = StateProvider<String>((ref) => 'ALL');
 final minPowerKwProvider = StateProvider<double>((ref) => 0);
 
+/// Inclusive €/kWh range. `0` = no bound. Stations without a tariff drop out
+/// when either bound is set.
+final minPriceEurProvider = StateProvider<double>((ref) => 0);
+final maxPriceEurProvider = StateProvider<double>((ref) => 0);
+
+const priceMinFilters = <({double eur, String label})>[
+  (eur: 0, label: 'Any min'),
+  (eur: 0.20, label: '€0.20+'),
+  (eur: 0.30, label: '€0.30+'),
+  (eur: 0.40, label: '€0.40+'),
+];
+
+const priceMaxFilters = <({double eur, String label})>[
+  (eur: 0, label: 'Any max'),
+  (eur: 0.30, label: '≤ €0.30'),
+  (eur: 0.40, label: '≤ €0.40'),
+  (eur: 0.50, label: '≤ €0.50'),
+  (eur: 0.60, label: '≤ €0.60'),
+];
+
 bool matchesConnectorFilter(Station station, String type) {
   if (type == 'ALL') return true;
   if (station.connectorTypes.isEmpty) return false;
@@ -59,6 +79,15 @@ bool matchesPowerFilter(Station station, double minKw) {
   return station.maxPowerKw >= minKw;
 }
 
+bool matchesPriceFilter(Station station, double minEur, double maxEur) {
+  if (minEur <= 0 && maxEur <= 0) return true;
+  final price = station.tariffEur;
+  if (price == null) return false;
+  if (minEur > 0 && price < minEur) return false;
+  if (maxEur > 0 && price > maxEur) return false;
+  return true;
+}
+
 // Filtered Stations Provider
 final filteredStationsProvider = Provider<AsyncValue<List<Station>>>((ref) {
   final stationsAsync = ref.watch(stationsProvider);
@@ -66,12 +95,15 @@ final filteredStationsProvider = Provider<AsyncValue<List<Station>>>((ref) {
   final country = ref.watch(countryFilterProvider);
   final connector = ref.watch(connectorFilterProvider);
   final minKw = ref.watch(minPowerKwProvider);
+  final minEur = ref.watch(minPriceEurProvider);
+  final maxEur = ref.watch(maxPriceEurProvider);
 
   return stationsAsync.whenData((stations) {
     return stations.where((station) {
       if (!matchesCountryFilter(station, country)) return false;
       if (!matchesConnectorFilter(station, connector)) return false;
       if (!matchesPowerFilter(station, minKw)) return false;
+      if (!matchesPriceFilter(station, minEur, maxEur)) return false;
       if (searchQuery.trim().isEmpty) return true;
       return stationMatchesQuery(station, searchQuery);
     }).toList();

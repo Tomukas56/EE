@@ -20,6 +20,7 @@
     "@prisma/client": "^5.22.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
+    "escape-html": "^1.0.3",
     "express": "^5.2.1",
     "helmet": "^8.1.0",
     "node-cron": "^4.2.1",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
+    "@types/escape-html": "^1.0.4",
     "@types/express": "^5.0.6",
     "@types/node": "^24.10.1",
     "@types/node-cron": "^3.0.11",

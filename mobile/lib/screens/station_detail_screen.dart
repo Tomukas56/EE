@@ -8,6 +8,14 @@ import '../providers/stations_provider.dart';
 import '../widgets/arrival_check_sheet.dart';
 import '../widgets/connector_badge.dart';
 
+String _updatedLabel(DateTime synced) {
+  final seconds = DateTime.now().difference(synced).inSeconds;
+  if (seconds < 60) return '$seconds sec ago';
+  final minutes = seconds ~/ 60;
+  if (minutes < 60) return '$minutes min ago';
+  return '${minutes ~/ 60} h ago';
+}
+
 class StationDetailScreen extends ConsumerWidget {
   final String stationId;
 
@@ -178,6 +186,26 @@ class StationDetailScreen extends ConsumerWidget {
                           ),
                         ),
                       ],
+                      if (station.hasLiveOccupancy) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          '${station.availableConnectors} available · ${station.connectorCount} connectors'
+                          '${station.tariff != null ? ' · ${station.tariff}' : ''}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (station.lastSyncedAt != null)
+                          Text(
+                            'Updated ${_updatedLabel(station.lastSyncedAt!)}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                      ],
                     ],
                   ),
                 ),
@@ -219,6 +247,17 @@ class StationDetailScreen extends ConsumerWidget {
                           label: 'Website',
                           value: station.website!,
                           onTap: () => _launchWebsite(station.website),
+                        ),
+
+                      if (station.source == 'via_lietuva')
+                        _InfoRow(
+                          icon: Icons.verified,
+                          label: 'Catalogue',
+                          value:
+                              'Via Lietuva open data (CC BY 4.0). Occupancy and price as last published.',
+                          onTap: () => _launchWebsite(
+                            'https://ev.vialietuva.lt/atviri-duomenys-1',
+                          ),
                         ),
                     ],
                   ),
