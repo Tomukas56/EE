@@ -15,6 +15,8 @@ import '../screens/route/route_planner_screen.dart';
 import '../screens/vehicle/vehicle_registration_screen.dart';
 import '../screens/stations/mark_station_screen.dart';
 import '../screens/stations/owner_review_screen.dart';
+import '../screens/account/offline_maps_screen.dart';
+import '../screens/account/map_settings_screen.dart';
 import '../screens/account/legal_account_screen.dart';
 
 bool _isFullSession(AppUser? user) =>
@@ -127,6 +129,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/owner-review',
         name: 'owner-review',
         builder: (context, state) => const OwnerReviewScreen(),
+      ),
+      GoRoute(
+        path: '/map-settings',
+        name: 'map-settings',
+        builder: (context, state) => const MapSettingsScreen(),
+      ),
+      GoRoute(
+        path: '/offline-maps',
+        name: 'offline-maps',
+        builder: (context, state) => const OfflineMapsScreen(),
       ),
     ],
   );

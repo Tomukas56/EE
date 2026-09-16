@@ -25,4 +25,5 @@ Driver-facing MVP (feedback 2026-09-05): prices on the map, filter by power and 
 - Architecture: `docs/specs/DFD.md` (production DFD), `docs/architecture/system_architecture.md`, `docs/specs/ADR-001-Data-Strategy.md`, `docs/specs/SRD.md`
 - Honest status: `memory-bank/progress.md`
 - Work order: `docs/specs/WORK_PLAN.md`
+- Data sources / contracts: `docs/specs/DATA_SOURCES.md`
 - Repo: https://github.com/Tomukas56/EE

@@ -16,7 +16,11 @@ import '../utils/geo.dart';
 import '../widgets/arrival_check_sheet.dart';
 import '../widgets/map_filter_rail.dart';
 import '../widgets/osm_tile_layer.dart';
+import '../widgets/map_tile_layer.dart';
 import '../widgets/price_map_pin.dart';
+import '../widgets/offline_banner.dart';
+import '../providers/map_provider_provider.dart';
+import '../models/map_provider.dart' as mp;
 
 class MapScreen extends ConsumerStatefulWidget {
   final bool focusNearest;
@@ -42,8 +46,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   double? _cameraLng;
   DevicePosition? _me;
   final Set<String> _promptedArrival = {};
-  bool _useGoogleMap = AppConfig.useGoogleMaps;
   final PricePinCache _pinCache = PricePinCache();
+
+  bool get _useGoogleMap {
+    final selectedProvider = ref.read(mapProviderProvider);
+    return selectedProvider == mp.MapProvider.googleMaps &&
+        AppConfig.googleMapsApiKey.isNotEmpty;
+  }
 
   @override
   void initState() {
@@ -59,20 +68,24 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     super.dispose();
   }
 
-  bool _googleFallbackArmed = false;
-
-  void _armGoogleFallback() {
-    if (_googleFallbackArmed || !AppConfig.useGoogleMaps) return;
-    _googleFallbackArmed = true;
-    Future<void>.delayed(const Duration(seconds: 20), () {
-      if (!mounted || _googleMap != null) return;
-      setState(() => _useGoogleMap = false);
-    });
-  }
+  // Google fallback removed - user selects provider manually in settings
 
   List<Station> _mappable(List<Station> stations) {
     return stations.where(hasCoordinates).toList();
   }
+
+  double get _minAllowedZoom =>
+      widget.focusNearest ? nearbyMinZoom : mapMinZoom;
+
+  double get _viewRadiusKm => radiusKmForZoom(
+        _zoom,
+        maxKm: widget.focusNearest ? nearbyMaxRadiusKm : mapMaxRadiusKm,
+      );
+
+  bool get _showNearbyCircle =>
+      _me != null && (widget.focusNearest || _zoom >= nearbyMinZoom - 0.05);
+
+  static const _maxPins = 40;
 
   List<Station> _nearbyPins(List<Station> stations) {
     final lat = _cameraLat ?? _me?.latitude;
@@ -82,7 +95,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       stations,
       lat,
       lng,
-      radiusKm: radiusKmForZoom(_zoom),
+      radiusKm: _viewRadiusKm,
+    );
+  }
+
+  List<Station> _visiblePins(List<Station> stations) {
+    final nearby = _nearbyPins(stations);
+    if (nearby.length <= _maxPins) return nearby;
+    return stationsNear(
+      nearby,
+      _cameraLat ?? _me?.latitude ?? vilniusLat,
+      _cameraLng ?? _me?.longitude ?? vilniusLng,
+      limit: _maxPins,
     );
   }
 
@@ -113,7 +137,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Future<void> _nudgeZoom(double delta) async {
-    final next = (_zoom + delta).clamp(nearbyMinZoom, nearbyMaxZoom);
+    final next = (_zoom + delta).clamp(_minAllowedZoom, nearbyMaxZoom);
     if ((next - _zoom).abs() < 0.05) return;
     _zoom = next;
     if (_useGoogleMap && _googleMap != null) {
@@ -290,15 +314,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Future<void> _refreshGoogleMarkers(List<Station> pins) async {
     _pins = pins;
     final selected = ref.read(destinationStationProvider);
-    var visible = _nearbyPins(pins);
-    if (visible.length > 40) {
-      visible = stationsNear(
-        visible,
-        _cameraLat ?? _me?.latitude ?? vilniusLat,
-        _cameraLng ?? _me?.longitude ?? vilniusLng,
-        limit: 40,
-      );
-    }
+    var visible = _visiblePins(pins);
     if (selected != null &&
         hasCoordinates(selected) &&
         !visible.any((station) => station.id == selected.id)) {
@@ -344,24 +360,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final centerLat = _cameraLat ?? _me?.latitude ?? vilniusLat;
     final centerLng = _cameraLng ?? _me?.longitude ?? vilniusLng;
     if (_useGoogleMap) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _armGoogleFallback());
       return gmaps.GoogleMap(
         key: const ValueKey('ee-google-map'),
         initialCameraPosition: gmaps.CameraPosition(
           target: gmaps.LatLng(centerLat, centerLng),
           zoom: nearbyZoom,
         ),
-        minMaxZoomPreference: const gmaps.MinMaxZoomPreference(
-          nearbyMinZoom,
+        minMaxZoomPreference: gmaps.MinMaxZoomPreference(
+          _minAllowedZoom,
           nearbyMaxZoom,
         ),
         markers: Set<gmaps.Marker>.of(_markers),
         circles: {
-          if (_me != null)
+          if (_showNearbyCircle)
             gmaps.Circle(
               circleId: const gmaps.CircleId('nearby'),
               center: gmaps.LatLng(_me!.latitude, _me!.longitude),
-              radius: radiusKmForZoom(_zoom) * 1000,
+              radius: _viewRadiusKm * 1000,
               fillColor: const Color(0x220066FF),
               strokeColor: const Color(0xFF0066FF),
               strokeWidth: 1,
@@ -393,13 +408,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
 
     final destination = ref.watch(destinationStationProvider);
-    final osmPins = _nearbyPins(pins);
+    final osmPins = _visiblePins(pins);
     return FlutterMap(
       mapController: _mapController,
       options: MapOptions(
         initialCenter: LatLng(centerLat, centerLng),
         initialZoom: nearbyZoom,
-        minZoom: nearbyMinZoom,
+        minZoom: _minAllowedZoom,
         maxZoom: nearbyMaxZoom,
         onPositionChanged: (camera, hasGesture) {
           _zoom = camera.zoom;
@@ -413,13 +428,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         },
       ),
       children: [
-        const OsmTileLayer(),
-        if (_me != null)
+        MapTileLayer(provider: ref.read(mapProviderProvider)),
+        if (_showNearbyCircle)
           CircleLayer(
             circles: [
               CircleMarker(
                 point: LatLng(_me!.latitude, _me!.longitude),
-                radius: radiusKmForZoom(_zoom) * 1000,
+                radius: _viewRadiusKm * 1000,
                 useRadiusInMeter: true,
                 color: const Color(0x220066FF),
                 borderStrokeWidth: 1,
@@ -502,6 +517,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final destination = ref.watch(destinationStationProvider);
     final limited = ref.watch(sessionProvider)?.limitedAccess == true;
 
+    ref.listen<String>(countryFilterProvider, (previous, next) {
+      if (widget.focusNearest) return;
+      if (previous == next) return;
+      final cam = cameraForCountry(next);
+      _moveCamera(cam.lat, cam.lng, cam.zoom);
+    });
+
     if (!limited &&
         widget.focusNearest &&
         _locateDone &&
@@ -522,7 +544,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               : stationsAsync.maybeWhen(
                   data: (stations) {
                     final n = _nearbyPins(stations).length;
-                    return '${formatRadiusKm(radiusKmForZoom(_zoom))} ($n)';
+                    return '${formatRadiusKm(_viewRadiusKm)} ($n)';
                   },
                   orElse: () => 'Choose a station',
                 ),
@@ -551,6 +573,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           return Stack(
             children: [
               _buildBasemap(allPins),
+              const Positioned(
+                top: 0,
+                right: 0,
+                child: OfflineBanner(),
+              ),
               Positioned(
                 top: 12,
                 left: 12,
@@ -699,9 +726,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       const SizedBox(height: 12),
                     ],
                     _MapZoomControls(
-                      radiusLabel: formatRadiusKm(radiusKmForZoom(_zoom)),
+                      radiusLabel: formatRadiusKm(_viewRadiusKm),
                       canZoomIn: _zoom < nearbyMaxZoom - 0.05,
-                      canZoomOut: _zoom > nearbyMinZoom + 0.05,
+                      canZoomOut: _zoom > _minAllowedZoom + 0.05,
                       onZoomIn: () => _nudgeZoom(nearbyZoomStep),
                       onZoomOut: () => _nudgeZoom(-nearbyZoomStep),
                       showLocation: true,

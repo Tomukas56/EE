@@ -13,10 +13,12 @@ Do **not** claim done: live Stripe/PCI, OCPI occupancy, iOS, CRA/CE, production 
 ## Decisions this session
 - Map filters stay on the **right** with zoom/location. Do not wrap `GoogleMap` in `Listener` / `GestureDetector`.
 - Google Maps OSM fallback: arm only after the map is on screen (~20s), not at `initState`.
+- **Map of stations** can zoom out to the LT/LV/EE/PL region (min zoom 5). **Nearest column** stays street-scale (~2.4 km, min zoom 14). Pins stay capped at 40 for SM-T585 RAM.
 - Search folds Baltic/Polish letters in `foldSearchText` (`mobile/lib/utils/geo.dart`); used by map suggestions and the station list.
 - Menu cards: do not wrap the whole tile in one `FittedBox` — long subtitles must not scale down the title.
 - Lab charging: elapsed hours × max kW, €0.32/kWh, `payment_method: lab-estimate`.
 - Flutter **3.32.8 / Dart 3.8.1**. Do not `flutter upgrade`.
+- **Offline mode (2026-09-16)**: PRD §2.7. Manual download with confirmation. No auto-refresh. Data expiry warning after 7 days (not auto-deleted). SQLite unencrypted (only public catalogue).
 
 ## What is running
 - API: `node dist/index.js` in `backend/` on port 3000
@@ -35,6 +37,7 @@ These need PRD §10 (tariff + last-known) then OCPI session. Do **not** implemen
 Lab backend POLLs official `ev.vialietuva.lt/ocpi/2.3.0` (locations + tariffs, CC BY 4.0). App still talks only to our API. LT OCM rows are dropped when VL sync succeeds. Refresh every 5 minutes.
 
 ## Next work (priority)
-1. Tablet QA of hybrid € pins and € min–max filter
-2. VPS / PostGIS still required for production Vartai B
-3. Real START/STOP + progress (U4) only after JWT + 2FA gates
+1. Implement §2.7 Offline Mode (sqflite + Account → Offline Maps screen)
+2. Tablet QA of hybrid € pins and € min–max filter
+3. VPS / PostGIS still required for production Vartai B
+4. Real START/STOP + progress (U4) only after JWT + 2FA gates

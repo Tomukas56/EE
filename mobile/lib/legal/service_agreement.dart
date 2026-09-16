@@ -21,6 +21,22 @@ class ServiceAgreement {
           'Live occupancy, operator start of charge, and Stripe payments are not enabled. Features marked upcoming are not guaranteed.',
     ),
     (
+      heading: '2a. Offline mode and data freshness',
+      body:
+          'The app works in two modes: Online and Offline.\n'
+          '• Online mode: The app fetches live station data from our servers. You see real-time availability, prices, and newly added stations.\n'
+          '• Offline mode: You can manually download regional station data (LT, LV, EE, PL, or all countries) to your device via Account → Offline Maps. '
+          'This allows you to view the map and plan trips without an internet connection. Offline data is stored unencrypted on your device (public catalogue only).\n'
+          '\n'
+          'Important limitations when using offline mode:\n'
+          '• Downloaded data becomes outdated over time. The app will warn you when data is 7+ days old and recommend an update.\n'
+          '• Occupancy status, new stations, price changes, and operator updates will not be visible until you refresh the data online.\n'
+          '• All downloads and updates are manual—you must confirm each action. The app will show estimated storage space before downloading.\n'
+          '• Trip planning with offline data may not reflect current real-world conditions.\n'
+          '\n'
+          'You remain responsible for checking station availability and operator details before driving to a location, especially when using offline data.',
+    ),
+    (
       heading: '3. Account and eligibility',
       body:
           'You must accept these Terms, the Privacy notice, and the README, then sign in with Google. '

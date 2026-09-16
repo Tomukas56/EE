@@ -3,6 +3,8 @@ import '../models/station.dart';
 import '../services/api_service.dart';
 import '../services/location_service.dart';
 import '../utils/geo.dart';
+import 'connectivity_provider.dart';
+import 'offline_provider.dart';
 
 
 // API Service Provider
@@ -10,10 +12,28 @@ final apiServiceProvider = Provider<ApiService>((ref) {
   return ApiService();
 });
 
-// Stations List Provider
+// Stations List Provider (with offline fallback)
 final stationsProvider = FutureProvider<List<Station>>((ref) async {
   final apiService = ref.watch(apiServiceProvider);
-  return await apiService.getStations();
+  final isOnline = ref.watch(isOnlineProvider);
+  final forceOffline = ref.watch(forceOfflineModeProvider);
+
+  // Try online first if connected
+  if (isOnline && !forceOffline) {
+    try {
+      return await apiService.getStations();
+    } catch (e) {
+      // If online API fails, try cache as fallback
+      final offlineService = ref.watch(offlineServiceProvider);
+      final cached = await offlineService.getCachedStations();
+      if (cached.isNotEmpty) return cached;
+      rethrow; // No cache available, rethrow original error
+    }
+  }
+
+  // Offline mode or force offline - use cache only
+  final offlineService = ref.watch(offlineServiceProvider);
+  return await offlineService.getCachedStations();
 });
 
 // Station Detail Provider (family provider for different IDs)

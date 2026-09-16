@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/stations_provider.dart';
 import '../../providers/vehicle_provider.dart';
+import '../../widgets/offline_banner.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -186,6 +187,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               onTap: () => context.pushNamed('owner-review'),
             ),
           _MenuItem(
+            title: 'Map Settings',
+            subtitle: 'Choose map provider (Google, OSM, Mapbox)',
+            icon: Icons.map_outlined,
+            gradient: const LinearGradient(
+              colors: [Color(0xFF7B61FF), Color(0xFF9B7FFF)],
+            ),
+            onTap: () => context.pushNamed('map-settings'),
+          ),
+          _MenuItem(
+            title: 'Offline Maps',
+            subtitle: 'Download station data for offline use',
+            icon: Icons.offline_pin,
+            gradient: const LinearGradient(
+              colors: [Color(0xFF00C48C), Color(0xFF00A6CC)],
+            ),
+            onTap: () => context.pushNamed('offline-maps'),
+          ),
+          _MenuItem(
             title: limited ? 'Sign in' : 'Sign out',
             subtitle: limited
                 ? 'Accept the Terms and continue with Google'
@@ -225,10 +244,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         color: const Color(0xFF0B1F3A),
         child: SafeArea(
           bottom: false,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Stack(
             children: [
-              _MenuHeader(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _MenuHeader(
                 userLabel: user?.label ?? 'Account',
                 photoUrl: user?.photoUrl,
                 stationCount: stationCount,
@@ -252,17 +273,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                 ),
-              Expanded(
-                child: _FillMenu(
-                  items: items,
-                  onOpen: (item) {
-                    if (item.children != null) {
-                      setState(() => _submenu = item);
-                    } else if (item.onTap != null) {
-                      item.onTap!();
-                    }
-                  },
-                ),
+                  Expanded(
+                    child: _FillMenu(
+                      items: items,
+                      onOpen: (item) {
+                        if (item.children != null) {
+                          setState(() => _submenu = item);
+                        } else if (item.onTap != null) {
+                          item.onTap!();
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const Positioned(
+                top: 0,
+                right: 0,
+                child: OfflineBanner(),
               ),
             ],
           ),

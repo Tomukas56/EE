@@ -4,12 +4,16 @@ import '../models/station.dart';
 const vilniusLat = 54.6872;
 const vilniusLng = 25.2797;
 
-/// Camera covering Lithuania, Latvia, Estonia, and Poland (list / search only).
+/// Camera covering Lithuania, Latvia, Estonia, and Poland.
 const regionLat = 54.4;
 const regionLng = 21.5;
 const regionZoom = 5.5;
 
-/// Map opens on the device, not the whole country — keeps marker RAM low.
+/// Map of stations: far enough to see all app countries. Pins stay capped in the map.
+const mapMinZoom = 5.0;
+const mapMaxRadiusKm = 1200.0;
+
+/// Opens on the device (street scale). Nearest column stays in this band.
 const nearbyRadiusKm = 0.3;
 const nearbyZoom = 17.0;
 const nearbyMinZoom = 14.0;
@@ -22,9 +26,9 @@ const nearbyZoomStep = 1.0;
 const pricePinMinZoom = 16.0;
 
 /// Viewing radius grows when zooming out (300 m at zoom 17).
-double radiusKmForZoom(double zoom) {
+double radiusKmForZoom(double zoom, {double maxKm = nearbyMaxRadiusKm}) {
   final km = nearbyRadiusKm * pow(2, nearbyZoom - zoom);
-  return km.clamp(nearbyMinRadiusKm, nearbyMaxRadiusKm);
+  return km.clamp(nearbyMinRadiusKm, maxKm);
 }
 
 String formatRadiusKm(double km) {

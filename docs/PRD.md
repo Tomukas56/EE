@@ -60,6 +60,49 @@ Energy Eniwhere is a comprehensive mobile application for Electric Vehicle (EV) 
 *   Payment history and invoices.
 *   Lab: show whether this **device wallet** is linked (Google Wallet / Google Pay on Android, Apple Wallet / Apple Pay on iOS). Lab builds are **not linked**; receipts stay in-app.
 
+### 2.7 Offline Mode (added 2026-09-16)
+*   **Purpose**: Enable trip planning and station browsing when network coverage is poor or unavailable (rural routes, roaming limits, tunnels, border crossings).
+*   **User control**: Offline mode is **opt-in**. User downloads regional data from **Account → Offline Maps**.
+*   **Download flow**:
+    *   User selects region: **LT**, **LV**, **EE**, **PL**, or **All** (4 countries).
+    *   App displays:
+        *   Estimated storage size (e.g., "LT: ~12 MB, 1,500 stations").
+        *   Number of stations in the region.
+        *   Last sync timestamp (if previously downloaded).
+    *   **Confirmation required**: Dialog: *"Download ~12 MB of station data to this device? You can delete it anytime from Offline Maps."* User must tap **Download** or **Cancel**.
+    *   Progress indicator during download.
+*   **Storage**:
+    *   Data saved in local **SQLite database** (`offline_stations.db`) in app documents directory.
+    *   Schema: station ID, name, address, lat/lng, country, operator, kW, plugs, last-known tariff, last-known occupancy, sync timestamp.
+    *   **Security**: Database is **not encrypted** (GDPR Art. 5(1)(c) — data minimisation: only public station catalogue, no personal data). If user data is later cached, use `flutter_secure_storage` or `encrypted_shared_preferences`.
+*   **Offline operation**:
+    *   When network is unavailable **or** user manually enables offline mode toggle, the app:
+        *   Loads stations from local DB instead of API.
+        *   Shows **banner**: *"Offline mode — prices and occupancy may be outdated. Last update: X hours/days ago."* User can dismiss for the session.
+    *   Map, list, search, and **trip planner** function with cached data.
+    *   **Limitations**:
+        *   Occupancy = last known or `UNKNOWN`.
+        *   Tariff = last known or missing.
+        *   **Cannot start/stop charging session** (requires network for CPO call). Graceful error: *"Charging start requires network connection."*
+        *   Crowd submissions (mark new station, arrival check) are **queued** until network returns, then synced in background.
+*   **Update policy** (manual, user-confirmed):
+    *   **No auto-refresh**. Updates are always manual.
+    *   When online and cached data is >24 hours old, app shows **snackbar**: *"Offline station data is X days old. Tap to refresh."*
+    *   User taps → confirmation dialog → re-download.
+    *   **Expiry**: Data is **not** auto-deleted. If data is >7 days old, show stronger warning: *"Data is 8 days old. Refresh recommended for accurate info."*
+*   **Deletion**: User can delete cached regions from **Offline Maps** screen to free space.
+*   **Map tiles**: Google Maps and OSM already cache viewed tiles at OS level. App does **not** bundle offline map tiles.
+*   **Data size estimates**:
+    *   LT: ~12 MB, ~1,500 stations
+    *   LV: ~3 MB, ~400 stations
+    *   EE: ~2 MB, ~300 stations
+    *   PL: ~18 MB, ~2,500 stations
+    *   **All**: ~35 MB
+*   **Compliance notes**:
+    *   GDPR Art. 5(1)(c): Only station catalogue cached (public data). No user CDRs, payment info, or personal identifiers.
+    *   If future features cache user trips or favourites, those must be encrypted (MASVS-STORAGE-1).
+    *   Offline mode must not bypass app transport security (no cleartext traffic policy change).
+
 ## 3. Technical Constraints
 *   **Platform**: Flutter (iOS/Android).
 *   **Lab backend (today)**: Node.js + Express + Prisma + PostgreSQL on the developer machine (Compose port **5433**).
@@ -158,6 +201,7 @@ Energy Eniwhere is an **EU consumer mobile app**, an **EV charging aggregator (e
 | Google Sign-In / OIDC | Auth | **Partial** | Wired; Android OAuth client empty until SHA-1 is in Firebase. Debug local session exists. |
 | Email + password + TOTP 2FA (§11) | This PRD / ASVS | **Not started (deferred)** | Required before live payments / START-STOP. **Do not build during current lab QA.** |
 | Secure token storage | MASVS | **Gap** | Session JSON in SharedPreferences. |
+| Offline station cache encryption | MASVS-STORAGE-1 | **Accepted risk** | SQLite DB unencrypted (only public station catalogue, no PII). If user data cached later, must use `flutter_secure_storage`. |
 | OWASP MASVS / cert pinning | MASVS | **Gap** | No pinning, no jailbreak/root policy, no release obfuscation policy documented. |
 | Backend authn/z on APIs | ASVS | **Gap** | Station list is open. Crowd submit/check-in have no user JWT. Owner PIN header is a **lab control**, not production IAM. |
 | PCI DSS SAQ A via Stripe | PCI / PSD2 | **Not started** | Stripe routes exist; `STRIPE_SECRET_KEY` empty. No Payment Sheet. |
@@ -245,11 +289,11 @@ Root menu (English UI): **Stations** · **Trip** · **Payments** · **Account**.
 | Tile | Submenu | Lab notes |
 |------|---------|-----------|
 | Stations | Map of stations, Nearest column, Station list, Mark a new station | Map chrome in §2.4. Skip mode: map only. |
-| Trip | Trip with charging, My vehicle | Planner shows a map polyline and **Navigate**. |
+| Trip | Trip with charging, My vehicle | Planner shows a map polyline and **Navigate**. Works offline with cached stations (no new route geometry). |
 | Payments | Charging history, Payments | Former “History” tile. Payments lists lab estimates + wallet-not-linked banner. |
-| Account | Signed in, Legal & privacy, Owner review, Sign out | Owner review = PIN inbox. Menu **title** size matches other tiles. **Sign out** closes the app. Skip **Sign in** → welcome. |
+| Account | Signed in, Legal & privacy, Owner review, **Offline Maps**, Sign out | Owner review = PIN inbox. **Offline Maps** = download regional data (§2.7). Menu **title** size matches other tiles. **Sign out** closes the app. Skip **Sign in** → welcome. |
 
-Tablet QA (SM-T585): map layout and this IA **locked in** 2026-09-02. Completeness vs this PRD remains ~35–40% — see `memory-bank/progress.md`.
+Tablet QA (SM-T585): map layout and this IA **locked in** 2026-09-02. Completeness vs this PRD remains ~35–40% — see `memory-bank/progress.md`. **Offline mode (§2.7) added 2026-09-16** — not yet in tablet build.
 
 ---
 

@@ -5,6 +5,7 @@ import '../providers/stations_provider.dart';
 import '../widgets/station_card.dart';
 import '../widgets/country_filter_bar.dart';
 import '../widgets/station_filter_bar.dart';
+import '../widgets/offline_banner.dart';
 
 class ListScreen extends ConsumerWidget {
   const ListScreen({super.key});
@@ -25,10 +26,12 @@ class ListScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Search Bar
-          Padding(
+          Column(
+            children: [
+              // Search Bar
+              Padding(
             padding: const EdgeInsets.all(16),
             child: TextField(
               decoration: InputDecoration(
@@ -142,6 +145,13 @@ class ListScreen extends ConsumerWidget {
                 ),
               ),
             ),
+          ),
+            ],
+          ),
+          const Positioned(
+            top: 0,
+            right: 0,
+            child: OfflineBanner(),
           ),
         ],
       ),

@@ -1,6 +1,8 @@
 # Progress
 
-## What works locally (verified 2026-09-02 on SM-T585)
+## What works locally
+
+### Code complete (not yet built on tablet 2026-09-16)
 
 ### Backend
 - PostgreSQL schema: `station`, `connector`, `charging_session`, crowd tables
@@ -30,6 +32,7 @@
 | Map with pins | Required | Google Maps + station pins | **Done** (lab UI approved) |
 | Filters (type, kW, distance) | Required | Country, plug, min kW, € min–max, search | **Lab done** |
 | Nearest station | Required | Map `nearest=1` | **Done** |
+| **Offline mode** | **PRD §2.7** | **sqflite cache, Account → Offline Maps, banner** | **Code done 2026-09-16** |
 | Auth (Google/Apple/email) | Required | Local device session; Firebase SHA-1 missing | **Lab only** |
 | Vehicle profile | Mandatory | Saved on device | **Lab done** |
 | Route planning | Core | Map + Directions or Nominatim + Navigate | **Lab done** |

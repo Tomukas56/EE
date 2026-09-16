@@ -56,10 +56,19 @@ class ApiService {
     );
   }
 
-  Future<List<Station>> getStations() async {
+  Future<List<Station>> getStations({
+    String? country,
+    int? limit,
+  }) async {
     final base = await _liveBase();
+    final uri = Uri.parse('$base/api/stations').replace(
+      queryParameters: {
+        if (country != null) 'country': country,
+        if (limit != null) 'limit': limit.toString(),
+      },
+    );
     final response = await http.get(
-      Uri.parse('$base/api/stations'),
+      uri,
       headers: _jsonHeaders,
     );
     if (response.statusCode != 200) {

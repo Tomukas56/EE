@@ -10,8 +10,13 @@ import '../../core/theme.dart';
 import '../../models/station.dart';
 import '../../providers/stations_provider.dart';
 import '../../providers/vehicle_provider.dart';
+import '../../services/location_service.dart';
 import '../../services/route_service.dart';
+import '../../utils/geo.dart';
 import '../../widgets/osm_tile_layer.dart';
+import '../../widgets/map_tile_layer.dart';
+import '../../providers/map_provider_provider.dart';
+import '../../models/map_provider.dart' as mp;
 
 class RoutePlannerScreen extends ConsumerStatefulWidget {
   const RoutePlannerScreen({super.key});
@@ -30,7 +35,19 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
   bool _loading = false;
   String? _error;
   bool _mapReady = false;
-  final bool _useGoogleMap = AppConfig.useGoogleMaps;
+  DevicePosition? _myLocation;
+
+  bool get _useGoogleMap {
+    final selectedProvider = ref.read(mapProviderProvider);
+    return selectedProvider == mp.MapProvider.googleMaps &&
+        AppConfig.googleMapsApiKey.isNotEmpty;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMyLocation();
+  }
 
   @override
   void dispose() {
@@ -38,6 +55,17 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
     _endController.dispose();
     _mapController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadMyLocation() async {
+    try {
+      final pos = await LocationService().getCurrentPosition();
+      if (mounted) {
+        setState(() => _myLocation = pos);
+      }
+    } catch (_) {
+      // Location not available - show default center
+    }
   }
 
   String _formatDuration(Duration d) {
@@ -300,33 +328,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
       );
     }
     if (route == null) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.map_outlined,
-            size: 80,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Enter start and destination',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              'A map and a Navigate button will appear after the route is calculated. Navigate opens Google Maps driving directions.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF3A3A3C), fontSize: 13, height: 1.35),
-            ),
-          ),
-        ],
-      );
+      return _buildEmptyMap();
     }
 
     final points = _pathPoints(route);
@@ -354,6 +356,72 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
               ],
             ],
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyMap() {
+    final myLat = _myLocation?.latitude ?? vilniusLat;
+    final myLng = _myLocation?.longitude ?? vilniusLng;
+    final hasLocation = _myLocation != null;
+
+    if (_useGoogleMap) {
+      return gmaps.GoogleMap(
+        key: const ValueKey('ee-trip-empty-google-map'),
+        initialCameraPosition: gmaps.CameraPosition(
+          target: gmaps.LatLng(myLat, myLng),
+          zoom: hasLocation ? 12.0 : 6.5,
+        ),
+        markers: hasLocation
+            ? {
+                gmaps.Marker(
+                  markerId: const gmaps.MarkerId('me'),
+                  position: gmaps.LatLng(myLat, myLng),
+                  infoWindow: const gmaps.InfoWindow(title: 'You are here'),
+                  icon: gmaps.BitmapDescriptor.defaultMarkerWithHue(
+                    gmaps.BitmapDescriptor.hueCyan,
+                  ),
+                ),
+              }
+            : const <gmaps.Marker>{},
+        myLocationEnabled: false,
+        myLocationButtonEnabled: false,
+        compassEnabled: true,
+        mapToolbarEnabled: false,
+        zoomControlsEnabled: false,
+      );
+    }
+
+    return FlutterMap(
+      mapController: _mapController,
+      options: MapOptions(
+        initialCenter: LatLng(myLat, myLng),
+        initialZoom: hasLocation ? 12.0 : 6.5,
+        onMapReady: () => _mapReady = true,
+      ),
+      children: [
+        MapTileLayer(provider: ref.read(mapProviderProvider)),
+        if (hasLocation)
+          MarkerLayer(
+            markers: [
+              Marker(
+                point: LatLng(myLat, myLng),
+                width: 40,
+                height: 40,
+                child: const Icon(
+                  Icons.my_location,
+                  color: Color(0xFF00C48C),
+                  size: 32,
+                ),
+              ),
+            ],
+          ),
+        const RichAttributionWidget(
+          alignment: AttributionAlignment.bottomLeft,
+          attributions: [
+            TextSourceAttribution('© OpenStreetMap'),
+          ],
         ),
       ],
     );
@@ -427,7 +495,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
         },
       ),
       children: [
-        const OsmTileLayer(),
+        MapTileLayer(provider: ref.read(mapProviderProvider)),
         if (points.length >= 2)
           PolylineLayer(
             polylines: [
