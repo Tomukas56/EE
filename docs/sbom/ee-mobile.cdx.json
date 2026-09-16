@@ -1,10 +1,10 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
-  "serialNumber": "urn:uuid:56705314-0e18-4445-9132-48f43bcade9b",
+  "serialNumber": "urn:uuid:bf5fafc5-d3a0-40ae-b96d-c0bfef962220",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-09-01T12:01:40Z",
+    "timestamp": "2026-09-16T10:00:38Z",
     "tools": {
       "components": [
         {
@@ -362,6 +362,80 @@
       "purl": "pkg:pub/collection@1.19.1",
       "type": "library",
       "bom-ref": "pkg:pub/collection@1.19.1",
+      "properties": [
+        {
+          "name": "internal:SrcFile",
+          "value": "mobile/pubspec.lock"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 1,
+            "methods": [
+              {
+                "technique": "manifest-analysis",
+                "confidence": 1,
+                "value": "mobile/pubspec.lock"
+              }
+            ],
+            "concludedValue": "mobile/pubspec.lock"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
+      "name": "connectivity_plus",
+      "version": "6.1.5",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "b5e72753cf63becce2c61fd04dfe0f1c430cc5278b53a1342dc5ad839eab29ec"
+        }
+      ],
+      "purl": "pkg:pub/connectivity_plus@6.1.5",
+      "type": "library",
+      "bom-ref": "pkg:pub/connectivity_plus@6.1.5",
+      "properties": [
+        {
+          "name": "internal:SrcFile",
+          "value": "mobile/pubspec.lock"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 1,
+            "methods": [
+              {
+                "technique": "manifest-analysis",
+                "confidence": 1,
+                "value": "mobile/pubspec.lock"
+              }
+            ],
+            "concludedValue": "mobile/pubspec.lock"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
+      "name": "connectivity_plus_platform_interface",
+      "version": "2.1.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3c09627c536d22fd24691a905cdd8b14520de69da52c7a97499c8be5284a32ed"
+        }
+      ],
+      "purl": "pkg:pub/connectivity_plus_platform_interface@2.1.0",
+      "type": "library",
+      "bom-ref": "pkg:pub/connectivity_plus_platform_interface@2.1.0",
       "properties": [
         {
           "name": "internal:SrcFile",
@@ -2811,6 +2885,43 @@
     },
     {
       "group": "",
+      "name": "nm",
+      "version": "0.5.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "2c9aae4127bdc8993206464fcc063611e0e36e72018696cd9631023a31b24254"
+        }
+      ],
+      "purl": "pkg:pub/nm@0.5.0",
+      "type": "library",
+      "bom-ref": "pkg:pub/nm@0.5.0",
+      "properties": [
+        {
+          "name": "internal:SrcFile",
+          "value": "mobile/pubspec.lock"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 1,
+            "methods": [
+              {
+                "technique": "manifest-analysis",
+                "confidence": 1,
+                "value": "mobile/pubspec.lock"
+              }
+            ],
+            "concludedValue": "mobile/pubspec.lock"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
       "name": "package_info_plus",
       "version": "8.3.1",
       "scope": "required",
@@ -3881,6 +3992,191 @@
     },
     {
       "group": "",
+      "name": "sqflite",
+      "version": "2.4.2",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "e2297b1da52f127bc7a3da11439985d9b536f75070f3325e62ada69a5c585d03"
+        }
+      ],
+      "purl": "pkg:pub/sqflite@2.4.2",
+      "type": "library",
+      "bom-ref": "pkg:pub/sqflite@2.4.2",
+      "properties": [
+        {
+          "name": "internal:SrcFile",
+          "value": "mobile/pubspec.lock"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 1,
+            "methods": [
+              {
+                "technique": "manifest-analysis",
+                "confidence": 1,
+                "value": "mobile/pubspec.lock"
+              }
+            ],
+            "concludedValue": "mobile/pubspec.lock"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
+      "name": "sqflite_android",
+      "version": "2.4.1",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "2b3070c5fa881839f8b402ee4a39c1b4d561704d4ebbbcfb808a119bc2a1701b"
+        }
+      ],
+      "purl": "pkg:pub/sqflite_android@2.4.1",
+      "type": "library",
+      "bom-ref": "pkg:pub/sqflite_android@2.4.1",
+      "properties": [
+        {
+          "name": "internal:SrcFile",
+          "value": "mobile/pubspec.lock"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 1,
+            "methods": [
+              {
+                "technique": "manifest-analysis",
+                "confidence": 1,
+                "value": "mobile/pubspec.lock"
+              }
+            ],
+            "concludedValue": "mobile/pubspec.lock"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
+      "name": "sqflite_common",
+      "version": "2.5.6",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "6ef422a4525ecc601db6c0a2233ff448c731307906e92cabc9ba292afaae16a6"
+        }
+      ],
+      "purl": "pkg:pub/sqflite_common@2.5.6",
+      "type": "library",
+      "bom-ref": "pkg:pub/sqflite_common@2.5.6",
+      "properties": [
+        {
+          "name": "internal:SrcFile",
+          "value": "mobile/pubspec.lock"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 1,
+            "methods": [
+              {
+                "technique": "manifest-analysis",
+                "confidence": 1,
+                "value": "mobile/pubspec.lock"
+              }
+            ],
+            "concludedValue": "mobile/pubspec.lock"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
+      "name": "sqflite_darwin",
+      "version": "2.4.2",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "279832e5cde3fe99e8571879498c9211f3ca6391b0d818df4e17d9fff5c6ccb3"
+        }
+      ],
+      "purl": "pkg:pub/sqflite_darwin@2.4.2",
+      "type": "library",
+      "bom-ref": "pkg:pub/sqflite_darwin@2.4.2",
+      "properties": [
+        {
+          "name": "internal:SrcFile",
+          "value": "mobile/pubspec.lock"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 1,
+            "methods": [
+              {
+                "technique": "manifest-analysis",
+                "confidence": 1,
+                "value": "mobile/pubspec.lock"
+              }
+            ],
+            "concludedValue": "mobile/pubspec.lock"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
+      "name": "sqflite_platform_interface",
+      "version": "2.4.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "8dd4515c7bdcae0a785b0062859336de775e8c65db81ae33dd5445f35be61920"
+        }
+      ],
+      "purl": "pkg:pub/sqflite_platform_interface@2.4.0",
+      "type": "library",
+      "bom-ref": "pkg:pub/sqflite_platform_interface@2.4.0",
+      "properties": [
+        {
+          "name": "internal:SrcFile",
+          "value": "mobile/pubspec.lock"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 1,
+            "methods": [
+              {
+                "technique": "manifest-analysis",
+                "confidence": 1,
+                "value": "mobile/pubspec.lock"
+              }
+            ],
+            "concludedValue": "mobile/pubspec.lock"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
       "name": "stack_trace",
       "version": "1.12.1",
       "scope": "required",
@@ -4152,6 +4448,43 @@
       "purl": "pkg:pub/stripe_platform_interface@11.5.0",
       "type": "library",
       "bom-ref": "pkg:pub/stripe_platform_interface@11.5.0",
+      "properties": [
+        {
+          "name": "internal:SrcFile",
+          "value": "mobile/pubspec.lock"
+        }
+      ],
+      "evidence": {
+        "identity": [
+          {
+            "field": "purl",
+            "confidence": 1,
+            "methods": [
+              {
+                "technique": "manifest-analysis",
+                "confidence": 1,
+                "value": "mobile/pubspec.lock"
+              }
+            ],
+            "concludedValue": "mobile/pubspec.lock"
+          }
+        ]
+      }
+    },
+    {
+      "group": "",
+      "name": "synchronized",
+      "version": "3.4.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c254ade258ec8282947a0acbbc90b9575b4f19673533ee46f2f6e9b3aeefd7c0"
+        }
+      ],
+      "purl": "pkg:pub/synchronized@3.4.0",
+      "type": "library",
+      "bom-ref": "pkg:pub/synchronized@3.4.0",
       "properties": [
         {
           "name": "internal:SrcFile",
@@ -5071,6 +5404,7 @@
     {
       "ref": "pkg:pub/mobile@1.0.0+1",
       "dependsOn": [
+        "pkg:pub/connectivity_plus@6.1.5",
         "pkg:pub/cupertino_icons@1.0.8",
         "pkg:pub/firebase_auth@5.7.0",
         "pkg:pub/firebase_core@3.15.2",
@@ -5087,8 +5421,11 @@
         "pkg:pub/http@1.6.0",
         "pkg:pub/intl@0.20.2",
         "pkg:pub/latlong2@0.9.1",
+        "pkg:pub/path@1.9.1",
+        "pkg:pub/path_provider@2.1.5",
         "pkg:pub/pay@2.0.0",
         "pkg:pub/shared_preferences@2.5.3",
+        "pkg:pub/sqflite@2.4.2",
         "pkg:pub/url_launcher@6.3.2"
       ]
     }
@@ -5115,8 +5452,8 @@
           ]
         }
       },
-      "timestamp": "2026-09-01T12:01:38Z",
-      "text": "This Software Bill-of-Materials (SBOM) document was created on Tuesday, September 1, 2026 with cdxgen. The data was captured during the build lifecycle phase. The document describes an application named 'mobile' with version '1.0.0+1'."
+      "timestamp": "2026-09-16T10:00:37Z",
+      "text": "This Software Bill-of-Materials (SBOM) document was created on Wednesday, September 16, 2026 with cdxgen. The data was captured during the build lifecycle phase. The document describes an application named 'mobile' with version '1.0.0+1'."
     }
   ]
 }
