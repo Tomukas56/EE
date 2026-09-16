@@ -10,8 +10,8 @@ Regenerate **for the build you ship**. A store listing needs an SBOM that matche
 
 | File | Source | Components (this snapshot) |
 |------|--------|----------------------------|
-| [ee-backend.cdx.json](ee-backend.cdx.json) | `backend/package-lock.json` | 181 |
-| [ee-mobile.cdx.json](ee-mobile.cdx.json) | `mobile/pubspec.lock` | 136 |
+| [ee-backend.cdx.json](ee-backend.cdx.json) | `backend/package-lock.json` | 182 |
+| [ee-mobile.cdx.json](ee-mobile.cdx.json) | `mobile/pubspec.lock` | 145 |
 
 Not in these files: `.env`, `mobile/android/build/`, Colima VM image, Open Charge Map station rows.
 
