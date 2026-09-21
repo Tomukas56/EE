@@ -33,6 +33,105 @@ class _OfflineBannerState extends ConsumerState<OfflineBanner>
     }
   }
 
+  Future<void> _showOfflineModeDialog() async {
+    final isOnline = ref.read(isOnlineProvider);
+    final forceOffline = ref.read(forceOfflineModeProvider);
+    final metadataList = await ref.read(syncMetadataProvider.future);
+    final hasData = metadataList.isNotEmpty;
+
+    if (!mounted) return;
+
+    // If trying to enable offline but no data - redirect to download
+    if (isOnline && !forceOffline && !hasData) {
+      final goToDownload = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.blue),
+              SizedBox(width: 8),
+              Text('Offline Mode'),
+            ],
+          ),
+          content: const Text(
+            'To use offline mode, you need to download station data first.\n\n'
+            'Go to Offline Maps to download data for your region?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Download Maps'),
+            ),
+          ],
+        ),
+      );
+
+      if (goToDownload == true && mounted) {
+        Navigator.of(context).pushNamed('offline-maps');
+      }
+      return;
+    }
+
+    // Show toggle dialog
+    await showDialog(
+      context: context,
+      builder: (context) => _OfflineModeDialog(
+        isOnline: isOnline,
+        forceOffline: forceOffline,
+        hasData: hasData,
+        onToggle: (value) async {
+          if (value) {
+            // Enable offline
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Row(
+                  children: [
+                    Icon(Icons.warning, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Text('Enable Offline Mode'),
+                  ],
+                ),
+                content: const Text(
+                  'When offline mode is enabled:\n\n'
+                  '• Station data comes from local cache\n'
+                  '• Prices and availability may be outdated\n'
+                  '• New stations won\'t appear until you refresh\n'
+                  '• Real-time occupancy is unavailable\n\n'
+                  'The manufacturer is not responsible for data accuracy in offline mode. '
+                  'Data is not updated automatically.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('I Agree'),
+                  ),
+                ],
+              ),
+            );
+
+            if (confirm == true) {
+              ref.read(forceOfflineModeProvider.notifier).state = true;
+              if (context.mounted) Navigator.pop(context);
+            }
+          } else {
+            // Disable offline
+            ref.read(forceOfflineModeProvider.notifier).state = false;
+            if (context.mounted) Navigator.pop(context);
+          }
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_dismissed) return const SizedBox.shrink();
@@ -97,7 +196,8 @@ class _OfflineBannerState extends ConsumerState<OfflineBanner>
     return Align(
       alignment: Alignment.topRight,
       child: GestureDetector(
-        onTap: _toggleExpanded,
+        onTap: _showOfflineModeDialog,
+        onLongPress: _toggleExpanded,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 400),
           curve: Curves.easeInOut,
@@ -149,6 +249,126 @@ class _OfflineBannerState extends ConsumerState<OfflineBanner>
           ),
         ),
       ),
+    );
+  }
+}
+
+class _OfflineModeDialog extends StatelessWidget {
+  final bool isOnline;
+  final bool forceOffline;
+  final bool hasData;
+  final Function(bool) onToggle;
+
+  const _OfflineModeDialog({
+    required this.isOnline,
+    required this.forceOffline,
+    required this.hasData,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isOfflineMode = !isOnline || forceOffline;
+
+    return AlertDialog(
+      title: Row(
+        children: [
+          Icon(
+            isOfflineMode ? Icons.cloud_off : Icons.cloud_done,
+            color: isOfflineMode ? Colors.orange : Colors.green,
+          ),
+          const SizedBox(width: 8),
+          const Text('Connection Mode'),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            isOfflineMode
+                ? 'Currently using cached data'
+                : 'Currently using live data',
+            style: const TextStyle(fontSize: 16),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isOfflineMode
+                  ? Colors.orange.shade50
+                  : Colors.green.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  isOfflineMode ? Icons.wifi_off : Icons.wifi,
+                  color: isOfflineMode ? Colors.orange : Colors.green,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    isOfflineMode ? 'Offline Mode' : 'Online Mode',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Switch(
+                  value: forceOffline,
+                  onChanged: isOnline ? onToggle : null,
+                ),
+              ],
+            ),
+          ),
+          if (!isOnline) ...[
+            const SizedBox(height: 16),
+            const Row(
+              children: [
+                Icon(Icons.info_outline, size: 16, color: Colors.grey),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'No network connection available',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (!hasData && isOnline) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.warning, size: 16, color: Colors.red),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'No offline data downloaded yet',
+                      style: TextStyle(fontSize: 12, color: Colors.red),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
     );
   }
 }

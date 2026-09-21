@@ -113,7 +113,6 @@ class _OfflineMapsScreenState extends ConsumerState<OfflineMapsScreen> {
   @override
   Widget build(BuildContext context) {
     final metadataAsync = ref.watch(syncMetadataProvider);
-    final forceOffline = ref.watch(forceOfflineModeProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -141,65 +140,38 @@ class _OfflineMapsScreenState extends ConsumerState<OfflineMapsScreen> {
                 style: TextStyle(color: Color(0xFF3A3A3C)),
               ),
               const SizedBox(height: 24),
-              // Force offline mode toggle
+              // Info card about offline mode
               Card(
-                child: SwitchListTile(
-                  title: const Text(
-                    'Force offline mode',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(
-                    forceOffline
-                        ? 'Using cached data only (saves mobile data)'
-                        : 'Auto: Online when available, offline when not',
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                  value: forceOffline,
-                  onChanged: (value) async {
-                    if (value) {
-                      // Show disclaimer when enabling offline mode
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Row(
-                            children: [
-                              Icon(Icons.warning, color: Colors.orange),
-                              SizedBox(width: 8),
-                              Text('Offline Mode'),
-                            ],
-                          ),
-                          content: const Text(
-                            'When offline mode is enabled:\n\n'
-                            '• Station data comes from local cache\n'
-                            '• Prices and availability may be outdated\n'
-                            '• New stations won\'t appear until you refresh\n'
-                            '• Real-time occupancy is unavailable\n\n'
-                            'The manufacturer is not responsible for data accuracy in offline mode. '
-                            'Data is not updated automatically from the moment offline mode is enabled.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('Cancel'),
+                color: Colors.blue.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: Colors.blue),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'To toggle offline mode:',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                            FilledButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text('Enable Offline Mode'),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Tap the status icon (top right corner) on any screen',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade700,
+                              ),
                             ),
                           ],
                         ),
-                      );
-
-                      if (confirm == true && mounted) {
-                        ref.read(forceOfflineModeProvider.notifier).state = true;
-                      }
-                    } else {
-                      ref.read(forceOfflineModeProvider.notifier).state = false;
-                    }
-                  },
-                  secondary: Icon(
-                    forceOffline ? Icons.cloud_off : Icons.cloud_queue,
-                    color: forceOffline ? Colors.orange : Colors.green,
+                      ),
+                    ],
                   ),
                 ),
               ),
