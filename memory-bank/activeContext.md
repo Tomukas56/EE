@@ -37,7 +37,12 @@ These need PRD §10 (tariff + last-known) then OCPI session. Do **not** implemen
 Lab backend POLLs official `ev.vialietuva.lt/ocpi/2.3.0` (locations + tariffs, CC BY 4.0). App still talks only to our API. LT OCM rows are dropped when VL sync succeeds. Refresh every 5 minutes.
 
 ## Next work (priority)
-1. Implement §2.7 Offline Mode (sqflite + Account → Offline Maps screen)
+1. ✅ Offline Mode (§2.7) — **COMPLETE (2026-09-21)**:
+   - SQLite cache (`offline_stations.db`) implemented
+   - Account → Offline Maps screen with download/update/delete
+   - Manual force offline toggle with disclaimer dialog
+   - Banner shows online/offline status with data age warning
+   - Auto-fallback to cache when network unavailable
 2. Tablet QA of hybrid € pins and € min–max filter
 3. VPS / PostGIS still required for production Vartai B
 4. Real START/STOP + progress (U4) only after JWT + 2FA gates

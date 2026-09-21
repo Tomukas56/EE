@@ -113,6 +113,7 @@ class _OfflineMapsScreenState extends ConsumerState<OfflineMapsScreen> {
   @override
   Widget build(BuildContext context) {
     final metadataAsync = ref.watch(syncMetadataProvider);
+    final forceOffline = ref.watch(forceOfflineModeProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -138,6 +139,69 @@ class _OfflineMapsScreenState extends ConsumerState<OfflineMapsScreen> {
                 'Download station data to use the app without network. '
                 'Data may be outdated when offline.',
                 style: TextStyle(color: Color(0xFF3A3A3C)),
+              ),
+              const SizedBox(height: 24),
+              // Force offline mode toggle
+              Card(
+                child: SwitchListTile(
+                  title: const Text(
+                    'Force offline mode',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    forceOffline
+                        ? 'Using cached data only (saves mobile data)'
+                        : 'Auto: Online when available, offline when not',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  value: forceOffline,
+                  onChanged: (value) async {
+                    if (value) {
+                      // Show disclaimer when enabling offline mode
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Row(
+                            children: [
+                              Icon(Icons.warning, color: Colors.orange),
+                              SizedBox(width: 8),
+                              Text('Offline Mode'),
+                            ],
+                          ),
+                          content: const Text(
+                            'When offline mode is enabled:\n\n'
+                            '• Station data comes from local cache\n'
+                            '• Prices and availability may be outdated\n'
+                            '• New stations won\'t appear until you refresh\n'
+                            '• Real-time occupancy is unavailable\n\n'
+                            'The manufacturer is not responsible for data accuracy in offline mode. '
+                            'Data is not updated automatically from the moment offline mode is enabled.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Enable Offline Mode'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirm == true && mounted) {
+                        ref.read(forceOfflineModeProvider.notifier).state = true;
+                      }
+                    } else {
+                      ref.read(forceOfflineModeProvider.notifier).state = false;
+                    }
+                  },
+                  secondary: Icon(
+                    forceOffline ? Icons.cloud_off : Icons.cloud_queue,
+                    color: forceOffline ? Colors.orange : Colors.green,
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
               ...regions.map((region) {

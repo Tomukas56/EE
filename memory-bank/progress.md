@@ -2,7 +2,7 @@
 
 ## What works locally
 
-### Code complete (not yet built on tablet 2026-09-16)
+### Code complete (2026-09-21)
 
 ### Backend
 - PostgreSQL schema: `station`, `connector`, `charging_session`, crowd tables
@@ -23,6 +23,13 @@
 - Trip planner: route polyline map + Navigate (Google Maps, waypoint if stop)
 - Charging / payment history from API; Payments shows wallet-not-linked banner
 - Sign out closes the app; Skip Sign in returns to welcome
+- **Offline mode** (§2.7, 2026-09-21):
+  - SQLite cache (`offline_stations.db`) for regional data (LT/LV/EE/PL/ALL)
+  - Account → Offline Maps: download/update/delete with size estimates
+  - Manual force offline toggle with disclaimer dialog
+  - Banner shows online/offline status, data age, 7-day warning
+  - Auto-fallback to cache when network unavailable
+  - "Go" button on station card → in-app route planner (not Google Maps)
 
 ## Completeness vs PRD (honest)
 
@@ -44,7 +51,7 @@
 | Tests | Engineering | `npm test` is a stub | **Not started** |
 | Docker Compose | Dev env | Colima + `./scripts/db-up.sh`, API on :5433 | **Lab done** |
 
-**Overall vs full PRD: ~45%.**  
+**Overall vs full PRD: ~48%** (offline mode +3%).  
 **Vs Phase-1 backend MVP (stations API): ~90%.**  
 Store, PCI, CRA, CPO start/stop, iOS are not.
 

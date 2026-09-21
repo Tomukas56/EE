@@ -65,13 +65,24 @@ class _OfflineBannerState extends ConsumerState<OfflineBanner>
         message: 'Offline — no cached data',
       ),
       data: (metadataList) {
-        final message = metadataList.isEmpty
-            ? 'Offline — no cached data'
-            : 'Offline — cached data (updated ${_formatAge(metadataList.map((m) => m.age).reduce((a, b) => a > b ? a : b))} ago)';
+        if (metadataList.isEmpty) {
+          return _buildStatusIndicator(
+            color: Colors.red.shade700,
+            icon: Icons.warning,
+            message: 'Offline — no cached data available',
+          );
+        }
+
+        final oldestAge = metadataList.map((m) => m.age).reduce((a, b) => a > b ? a : b);
+        final isVeryOld = oldestAge.inDays >= 7;
+        
+        final message = forceOffline
+            ? 'Offline mode (manual) — data may be outdated'
+            : 'Offline (no network) — last update ${_formatAge(oldestAge)} ago';
 
         return _buildStatusIndicator(
-          color: Colors.orange.shade800,
-          icon: Icons.offline_bolt,
+          color: isVeryOld ? Colors.red.shade700 : Colors.orange.shade800,
+          icon: isVeryOld ? Icons.warning : Icons.offline_bolt,
           message: message,
         );
       },
