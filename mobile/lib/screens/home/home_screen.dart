@@ -188,21 +188,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           _MenuItem(
             title: 'Map Settings',
-            subtitle: 'Choose map provider (Google, OSM, Mapbox)',
+            subtitle: 'Map provider, offline mode, download maps',
             icon: Icons.map_outlined,
             gradient: const LinearGradient(
               colors: [Color(0xFF7B61FF), Color(0xFF9B7FFF)],
             ),
             onTap: () => context.pushNamed('map-settings'),
-          ),
-          _MenuItem(
-            title: 'Offline Maps',
-            subtitle: 'Download station data for offline use',
-            icon: Icons.offline_pin,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF00C48C), Color(0xFF00A6CC)],
-            ),
-            onTap: () => context.pushNamed('offline-maps'),
           ),
           _MenuItem(
             title: limited ? 'Sign in' : 'Sign out',
