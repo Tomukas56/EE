@@ -43,3 +43,6 @@ signing_output.txt
 # Remaining-work list (Lithuanian, local only — not published)
 docs/specs/PROBLEMS.txt
 docs/specs/navigation_and_etc.txt
+
+# Internal technical specs (ERD with database schema - not for public repo)
+docs/specs/SRD.md
