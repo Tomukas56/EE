@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/map_provider.dart';
+import '../config.dart';
 
 /// Selected map provider (persisted to SharedPreferences).
 class MapProviderNotifier extends StateNotifier<MapProvider> {
@@ -19,6 +20,17 @@ class MapProviderNotifier extends StateNotifier<MapProvider> {
           (p) => p.name == savedName,
           orElse: () => MapProvider.openStreetMap,
         );
+        // Fallback to OSM if selected provider requires API key but doesn't have it
+        if (provider.requiresApiKey) {
+          final hasKey = (provider == MapProvider.googleMaps &&
+                  AppConfig.googleMapsApiKey.isNotEmpty) ||
+              (provider == MapProvider.mapbox && false) || // No Mapbox key in config
+              (provider == MapProvider.mapTiler && false); // No MapTiler key in config
+          if (!hasKey) {
+            state = MapProvider.openStreetMap;
+            return;
+          }
+        }
         state = provider;
       }
     } catch (_) {

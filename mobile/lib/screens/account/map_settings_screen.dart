@@ -39,13 +39,16 @@ class MapSettingsScreen extends ConsumerWidget {
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
               elevation: isSelected ? 4 : 1,
+              color: isSelected
+                  ? const Color(0xFFE3F2FF)
+                  : const Color(0xFFF8F9FA),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
                   color: isSelected
                       ? const Color(0xFF0066FF)
-                      : Colors.transparent,
-                  width: 2,
+                      : const Color(0xFFE0E0E0),
+                  width: isSelected ? 2 : 1,
                 ),
               ),
               child: ListTile(
@@ -129,8 +132,12 @@ class MapSettingsScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF0066FF).withOpacity(0.08),
+              color: const Color(0xFFFFF9E6),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFFFB800).withOpacity(0.3),
+                width: 1,
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,14 +147,14 @@ class MapSettingsScreen extends ConsumerWidget {
                     const Icon(
                       Icons.info_outline,
                       size: 20,
-                      color: Color(0xFF0066FF),
+                      color: Color(0xFFFF9500),
                     ),
                     const SizedBox(width: 8),
-                    Text(
+                    const Text(
                       'About map providers',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade800,
+                        color: Color(0xFF2C2C2E),
                       ),
                     ),
                   ],

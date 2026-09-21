@@ -17,7 +17,7 @@ class AppConfig {
   static const _fromDefine = String.fromEnvironment('API_BASE');
 
   /// Host machine on this LAN — used by a USB-connected tablet/phone.
-  static const lanApi = 'http://192.168.1.228:3000';
+  static const lanApi = 'http://192.168.1.229:3000';
 
   static String get apiBase {
     if (_fromDefine.isNotEmpty) return _fromDefine;

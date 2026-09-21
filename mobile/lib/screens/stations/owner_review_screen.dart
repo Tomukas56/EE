@@ -217,6 +217,8 @@ class _OwnerReviewScreenState extends ConsumerState<OwnerReviewScreen> {
               itemBuilder: (context, index) {
                 final row = _rows[index];
                 return Card(
+                  color: const Color(0xFFF8F9FA),
+                  elevation: 2,
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(
@@ -249,6 +251,14 @@ class _OwnerReviewScreenState extends ConsumerState<OwnerReviewScreen> {
                                 onPressed: _busy
                                     ? null
                                     : () => _reject(row['id'] as String),
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(
+                                    color: Color(0xFFFF3B30),
+                                    width: 2,
+                                  ),
+                                  foregroundColor: const Color(0xFFFF3B30),
+                                  backgroundColor: Colors.white,
+                                ),
                                 child: const Text('Reject'),
                               ),
                             ),
@@ -261,6 +271,7 @@ class _OwnerReviewScreenState extends ConsumerState<OwnerReviewScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF00C48C),
                                   foregroundColor: Colors.white,
+                                  elevation: 3,
                                 ),
                                 child: const Text('Confirm location'),
                               ),

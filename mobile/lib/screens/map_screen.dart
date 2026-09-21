@@ -15,7 +15,6 @@ import '../services/location_service.dart';
 import '../utils/geo.dart';
 import '../widgets/arrival_check_sheet.dart';
 import '../widgets/map_filter_rail.dart';
-import '../widgets/osm_tile_layer.dart';
 import '../widgets/map_tile_layer.dart';
 import '../widgets/price_map_pin.dart';
 import '../widgets/offline_banner.dart';
@@ -48,8 +47,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   final Set<String> _promptedArrival = {};
   final PricePinCache _pinCache = PricePinCache();
 
-  bool get _useGoogleMap {
-    final selectedProvider = ref.read(mapProviderProvider);
+  bool _useGoogleMap(mp.MapProvider selectedProvider) {
     return selectedProvider == mp.MapProvider.googleMaps &&
         AppConfig.googleMapsApiKey.isNotEmpty;
   }
@@ -140,7 +138,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final next = (_zoom + delta).clamp(_minAllowedZoom, nearbyMaxZoom);
     if ((next - _zoom).abs() < 0.05) return;
     _zoom = next;
-    if (_useGoogleMap && _googleMap != null) {
+    final selectedProvider = ref.read(mapProviderProvider);
+    if (_useGoogleMap(selectedProvider) && _googleMap != null) {
       await _googleMap?.animateCamera(gmaps.CameraUpdate.zoomTo(next));
     } else {
       final lat = _cameraLat ?? _me?.latitude ?? vilniusLat;
@@ -154,7 +153,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     _zoom = zoom;
     _cameraLat = lat;
     _cameraLng = lng;
-    if (_useGoogleMap && _googleMap != null) {
+    final selectedProvider = ref.read(mapProviderProvider);
+    if (_useGoogleMap(selectedProvider) && _googleMap != null) {
       await _googleMap?.animateCamera(
         gmaps.CameraUpdate.newLatLngZoom(gmaps.LatLng(lat, lng), zoom),
       );
@@ -168,7 +168,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (moveCamera) {
       _moveCamera(station.latitude!, station.longitude!, nearbyZoom);
     }
-    if (_useGoogleMap) {
+    final selectedProvider = ref.read(mapProviderProvider);
+    if (_useGoogleMap(selectedProvider)) {
       _refreshGoogleMarkers(_pins);
     }
   }
@@ -191,7 +192,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   void _clearDestination() {
     if (ref.read(destinationStationProvider) == null) return;
     ref.read(destinationStationProvider.notifier).state = null;
-    if (_useGoogleMap) {
+    final selectedProvider = ref.read(mapProviderProvider);
+    if (_useGoogleMap(selectedProvider)) {
       _refreshGoogleMarkers(_pins);
     }
   }
@@ -356,10 +358,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     });
   }
 
-  Widget _buildBasemap(List<Station> pins) {
+  Widget _buildBasemap(List<Station> pins, mp.MapProvider selectedProvider) {
     final centerLat = _cameraLat ?? _me?.latitude ?? vilniusLat;
     final centerLng = _cameraLng ?? _me?.longitude ?? vilniusLng;
-    if (_useGoogleMap) {
+    if (_useGoogleMap(selectedProvider)) {
       return gmaps.GoogleMap(
         key: const ValueKey('ee-google-map'),
         initialCameraPosition: gmaps.CameraPosition(
@@ -428,7 +430,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         },
       ),
       children: [
-        MapTileLayer(provider: ref.read(mapProviderProvider)),
+        MapTileLayer(provider: selectedProvider),
         if (_showNearbyCircle)
           CircleLayer(
             circles: [
@@ -516,6 +518,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final stationsAsync = ref.watch(filteredStationsProvider);
     final destination = ref.watch(destinationStationProvider);
     final limited = ref.watch(sessionProvider)?.limitedAccess == true;
+    final selectedProvider = ref.watch(mapProviderProvider);
+    final useGoogleMap = _useGoogleMap(selectedProvider);
 
     ref.listen<String>(countryFilterProvider, (previous, next) {
       if (widget.focusNearest) return;
@@ -563,7 +567,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           : stationsAsync.when(
         data: (stations) {
           final allPins = stations.where(hasCoordinates).toList();
-          if (_useGoogleMap && _googleMap != null) {
+          if (useGoogleMap && _googleMap != null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) _refreshGoogleMarkers(allPins);
             });
@@ -572,14 +576,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           final showHits = query.length >= 2;
           return Stack(
             children: [
-              _buildBasemap(allPins),
+              _buildBasemap(allPins, selectedProvider),
               const Positioned(
                 top: 0,
                 right: 0,
                 child: OfflineBanner(),
               ),
               Positioned(
-                top: 12,
+                top: 60,
                 left: 12,
                 right: 12,
                 child: Column(

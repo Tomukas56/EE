@@ -13,7 +13,6 @@ import '../../providers/vehicle_provider.dart';
 import '../../services/location_service.dart';
 import '../../services/route_service.dart';
 import '../../utils/geo.dart';
-import '../../widgets/osm_tile_layer.dart';
 import '../../widgets/map_tile_layer.dart';
 import '../../providers/map_provider_provider.dart';
 import '../../models/map_provider.dart' as mp;
@@ -37,8 +36,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
   bool _mapReady = false;
   DevicePosition? _myLocation;
 
-  bool get _useGoogleMap {
-    final selectedProvider = ref.read(mapProviderProvider);
+  bool _useGoogleMap(mp.MapProvider selectedProvider) {
     return selectedProvider == mp.MapProvider.googleMaps &&
         AppConfig.googleMapsApiKey.isNotEmpty;
   }
@@ -88,7 +86,8 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
   }
 
   void _fitRoute(PlannedRoute route) {
-    if (_useGoogleMap) {
+    final selectedProvider = ref.read(mapProviderProvider);
+    if (_useGoogleMap(selectedProvider)) {
       final points = _googlePath(route);
       final controller = _googleMap;
       if (points.isEmpty || controller == null) return;
@@ -203,6 +202,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
   Widget build(BuildContext context) {
     final vehicle = ref.watch(vehicleProvider);
     final route = _route;
+    final selectedProvider = ref.watch(mapProviderProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Trip Planner')),
@@ -265,7 +265,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
               ],
             ),
           ),
-          Expanded(child: _buildResult(context, route)),
+          Expanded(child: _buildResult(context, route, selectedProvider)),
           if (route != null)
             Container(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -315,7 +315,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
     );
   }
 
-  Widget _buildResult(BuildContext context, PlannedRoute? route) {
+  Widget _buildResult(BuildContext context, PlannedRoute? route, mp.MapProvider selectedProvider) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -328,14 +328,14 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
       );
     }
     if (route == null) {
-      return _buildEmptyMap();
+      return _buildEmptyMap(selectedProvider);
     }
 
     final points = _pathPoints(route);
     final stop = route.chargingStop;
     return Column(
       children: [
-        Expanded(child: _buildRouteMap(route, points, stop)),
+        Expanded(child: _buildRouteMap(route, points, stop, selectedProvider)),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
           child: Column(
@@ -361,12 +361,12 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
     );
   }
 
-  Widget _buildEmptyMap() {
+  Widget _buildEmptyMap(mp.MapProvider selectedProvider) {
     final myLat = _myLocation?.latitude ?? vilniusLat;
     final myLng = _myLocation?.longitude ?? vilniusLng;
     final hasLocation = _myLocation != null;
 
-    if (_useGoogleMap) {
+    if (_useGoogleMap(selectedProvider)) {
       return gmaps.GoogleMap(
         key: const ValueKey('ee-trip-empty-google-map'),
         initialCameraPosition: gmaps.CameraPosition(
@@ -401,7 +401,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
         onMapReady: () => _mapReady = true,
       ),
       children: [
-        MapTileLayer(provider: ref.read(mapProviderProvider)),
+        MapTileLayer(provider: selectedProvider),
         if (hasLocation)
           MarkerLayer(
             markers: [
@@ -431,11 +431,12 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
     PlannedRoute route,
     List<LatLng> points,
     Station? stop,
+    mp.MapProvider selectedProvider,
   ) {
     final mid = points.isEmpty
         ? const LatLng(55.2, 24.0)
         : points[points.length ~/ 2];
-    if (_useGoogleMap) {
+    if (_useGoogleMap(selectedProvider)) {
       final gPath = _googlePath(route);
       final markers = <gmaps.Marker>{
         gmaps.Marker(
@@ -495,7 +496,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
         },
       ),
       children: [
-        MapTileLayer(provider: ref.read(mapProviderProvider)),
+        MapTileLayer(provider: selectedProvider),
         if (points.length >= 2)
           PolylineLayer(
             polylines: [
