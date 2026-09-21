@@ -45,6 +45,13 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
   void initState() {
     super.initState();
     _loadMyLocation();
+    // Pre-fill destination if coming from map with selected station
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final destination = ref.read(destinationStationProvider);
+      if (destination != null && mounted) {
+        _endController.text = destination.name;
+      }
+    });
   }
 
   @override

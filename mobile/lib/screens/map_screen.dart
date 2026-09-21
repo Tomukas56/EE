@@ -255,14 +255,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Future<void> _openDirections(Station station) async {
-    final dest = '${station.latitude},${station.longitude}';
-    final origin = _me != null ? '${_me!.latitude},${_me!.longitude}' : null;
-    final url = Uri.parse(
-      origin == null
-          ? 'https://www.google.com/maps/dir/?api=1&destination=$dest'
-          : 'https://www.google.com/maps/dir/?api=1&origin=$origin&destination=$dest',
-    );
-    await launchUrl(url, mode: LaunchMode.externalApplication);
+    // Navigate to EE Trip planner with this station as destination
+    if (!mounted) return;
+    context.pushNamed('route-planner');
   }
 
   void _maybePromptArrival(Station? destination) {
