@@ -55,6 +55,41 @@
 **Vs Phase-1 backend MVP (stations API): ~90%.**  
 Store, PCI, CRA, CPO start/stop, iOS are not.
 
+## Implementation Roadmap
+
+**Created**: 2026-09-24  
+**Document**: `docs/IMPLEMENTATION_PLAN.md`  
+**Timeline**: 17-21 weeks (~4-5 months)  
+**Current Phase**: Pre-Phase 1 (Planning Complete)
+
+### 11 Phases to Production:
+
+1. **Backend Cloud Migration** 🔴 CRITICAL (2-3 weeks)
+   - VPS setup, PostgreSQL/PostGIS, Nginx, CI/CD
+2. **Authentication & Security** 🔴 CRITICAL (2 weeks)
+   - JWT, 2FA, OAuth (Google/Apple), biometrics
+3. **Real-Time OCPI Integration** 🔴 CRITICAL (3-4 weeks)
+   - Via Lietuva, LV/EE/PL feeds, occupancy, tariffs
+4. **Charging Session Management** 🔴 CRITICAL (2 weeks)
+   - Start/stop sessions, real-time monitoring, history
+5. **Stripe Payment Integration** 🔴 CRITICAL (2 weeks)
+   - Apple Pay, Google Pay, invoices, webhook handling
+6. **iOS Support** 🟡 HIGH (1-2 weeks)
+   - Xcode, App Store submission
+7. **Testing & QA** 🔴 CRITICAL (2 weeks)
+   - Unit, integration, load, UAT (beta testers)
+8. **Performance & Optimization** 🟢 MEDIUM (1 week)
+   - Redis caching, indexing, monitoring
+9. **Documentation & Compliance** 🔴 CRITICAL (1 week)
+   - API docs, legal, GDPR, CRA finalization
+10. **Launch Preparation** 🔴 CRITICAL (1 week)
+    - App Store submissions, production checklist
+11. **Post-Launch** 🟢 MEDIUM (Ongoing)
+    - Support, feature enhancements, maintenance
+
+See full plan with 200+ detailed tasks in `docs/IMPLEMENTATION_PLAN.md`.
+
 ## Left to build
-Driver accents U1–U4: `docs/specs/WORK_PLAN.md`, `docs/specs/PROBLEMS.txt` (gitignored).
-Tracked locally in `docs/specs/PROBLEMS.txt` (not on GitHub).
+Driver accents U1–U4 are covered in the implementation plan phases 3-4 (OCPI integration + session management).
+Production requirements (§10 PRD) are addressed in Phase 1-3.
+Full task tracking in `docs/IMPLEMENTATION_PLAN.md` (not on GitHub yet - will be tracked via GitHub Projects).

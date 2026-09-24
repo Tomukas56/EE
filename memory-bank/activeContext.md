@@ -37,12 +37,24 @@ These need PRD §10 (tariff + last-known) then OCPI session. Do **not** implemen
 Lab backend POLLs official `ev.vialietuva.lt/ocpi/2.3.0` (locations + tariffs, CC BY 4.0). App still talks only to our API. LT OCM rows are dropped when VL sync succeeds. Refresh every 5 minutes.
 
 ## Next work (priority)
-1. ✅ Offline Mode (§2.7) — **COMPLETE (2026-09-21)**:
-   - SQLite cache (`offline_stations.db`) implemented
-   - Account → Offline Maps screen with download/update/delete
-   - Manual force offline toggle with disclaimer dialog
-   - Banner shows online/offline status with data age warning
-   - Auto-fallback to cache when network unavailable
-2. Tablet QA of hybrid € pins and € min–max filter
-3. VPS / PostGIS still required for production Vartai B
-4. Real START/STOP + progress (U4) only after JWT + 2FA gates
+1. ✅ Offline Mode (§2.7) — **COMPLETE (2026-09-21)**
+2. ✅ Security Scanning & CVE Management — **COMPLETE (2026-09-24)**:
+   - Snyk authentication configured
+   - GitHub Actions weekly automated scans
+   - 0 high/critical vulnerabilities
+   - SBOM updated, CRA compliance documentation
+3. ✅ **Implementation Plan Created (2026-09-24)** — See `docs/IMPLEMENTATION_PLAN.md`
+   - 11-phase roadmap (17-21 weeks, ~4-5 months)
+   - Detailed tasks, priorities, dependencies
+   - Resource requirements, cost estimates
+   - Risk assessment
+
+## Immediate Next Steps (Phase 1: Backend Cloud)
+1. 🔴 **VPS Server Setup** (OVH/Hetzner: 2 vCPU, 4 GB RAM)
+2. 🔴 **PostgreSQL/PostGIS Production** (Docker, backups, monitoring)
+3. 🔴 **Nginx + HTTPS** (Let's Encrypt, reverse proxy)
+4. 🔴 **Backend Deployment** (PM2/systemd, environment variables)
+5. 🔴 **Data Migration** (local → production)
+6. 🔴 **CI/CD Setup** (GitHub Actions deployment workflow)
+
+See `docs/IMPLEMENTATION_PLAN.md` for full 11-phase plan.
