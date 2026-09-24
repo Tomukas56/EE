@@ -21,6 +21,33 @@ This file tracks all security vulnerabilities fixed in the project.
 
 ---
 
+## [2026-09-24] - No Critical Findings
+
+**Scan Date**: 2026-09-24
+**Scanned by**: Snyk (authenticated) + OSV-Scanner + npm audit
+**Backend**: ✅ 0 high/critical vulnerabilities (94 dependencies tested)
+**Mobile**: ✅ 0 high/critical vulnerabilities (SBOM scan)
+**Status**: Clean scan - all security gates passed
+
+**Tools Configuration**:
+- Snyk CLI 1.1307.0 with API token authentication
+- OSV-Scanner v2.5.0
+- npm audit (built-in)
+
+**Scanned Files**:
+- Backend: `package-lock.json` (181 packages)
+- Mobile: `pubspec.lock` (144 packages), SBOM analysis
+
+**Reports**:
+- `docs/sbom/cve-snyk-backend.json`
+- `docs/sbom/cve-snyk-mobile.json`
+- `docs/sbom/cve-osv.json`
+- `docs/sbom/cve-npm-audit.json`
+
+**CI/CD**: GitHub Actions workflow configured for weekly automated scans
+
+---
+
 ## [2026-09-23] - No Critical Findings
 
 **Scan Date**: 2026-09-23
