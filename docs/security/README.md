@@ -20,6 +20,11 @@ This folder contains all security-related documentation for the Energy Eniwhere 
   - Findings accepted as risks (not immediately fixed)
   - Justifications and mitigation plans
 
+- **[GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md)** - GitHub Actions automation setup
+  - How to configure automated weekly scans
+  - GitHub secrets configuration
+  - Workflow troubleshooting
+
 ### Related Documents (in parent folders)
 - **[../specs/SECURITY_AND_THREATS.md](../specs/SECURITY_AND_THREATS.md)** - Threat model and compliance requirements
 - **[../specs/SECURITY_COMPLIANCE.md](../specs/SECURITY_COMPLIANCE.md)** - Full CRA/GDPR/PSD2 compliance matrix
@@ -44,30 +49,35 @@ cat docs/sbom/cve-osv.md
 cat docs/sbom/cve-snyk-backend.json | jq '.vulnerabilities'
 ```
 
-### Setup Snyk (First Time)
+### Setup Snyk (Already Configured ✅)
 ```bash
-# 1. Get token from https://app.snyk.io/account
-# 2. Add to backend/.env (gitignored):
-echo "SNYK_TOKEN=your-token-here" >> backend/.env
+# Local setup is complete
+# Token is in backend/.env (gitignored)
 
-# 3. Re-run scan
-./scripts/scan-cve.sh
+# To run scans locally:
+cd backend
+SNYK_TOKEN=$(grep SNYK_TOKEN .env | cut -d '=' -f2) ../scripts/scan-cve.sh
+
+# For GitHub Actions automation:
+# See GITHUB_ACTIONS_SETUP.md for instructions
 ```
 
 ## 📊 Current Security Status
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| Dependency CVEs (Backend) | ✅ Clean | 0 high/critical (as of 2026-09-23) |
-| Dependency CVEs (Mobile) | ✅ Clean | 0 high/critical (as of 2026-09-23) |
-| Snyk Authentication | ⚠️ Setup needed | Add SNYK_TOKEN to backend/.env |
-| Outdated Dependencies | ⚠️ 19 packages | Priority updates needed (see audit report) |
+| Dependency CVEs (Backend) | ✅ Clean | 0 high/critical, 94 deps tested (2026-09-24) |
+| Dependency CVEs (Mobile) | ✅ Clean | 0 high/critical, 144 pkgs tested (2026-09-24) |
+| Snyk Authentication | ✅ Configured | Token added to backend/.env |
+| GitHub Actions | ⚠️ Setup pending | Add SNYK_TOKEN to GitHub secrets |
+| Outdated Dependencies | ✅ Updated | 20 Flutter + 33 npm packages upgraded |
 | Secrets Management | ⚠️ Partial | Google Maps key needs restriction |
 | TLS/HTTPS | ❌ Gap | Currently HTTP only (lab environment) |
 | Authentication | ❌ Not implemented | JWT + 2FA needed for production |
 
-**Last Scan**: 2026-09-23
-**Next Review**: Weekly (automated)
+**Last Scan**: 2026-09-24 11:10 UTC+3
+**Next Review**: Weekly (automated, pending GitHub secret setup)
+**Scan Tools**: Snyk CLI 1.1307.0 + OSV-Scanner v2.5.0 + npm audit
 
 ## 🔧 Common Tasks
 
@@ -171,10 +181,12 @@ npm update <package>  # or flutter pub upgrade
 
 ## 🔄 Maintenance
 
-- **Weekly**: Automated scans (TODO: GitHub Actions)
+- **Weekly**: Automated scans (GitHub Actions workflow configured, pending secret setup)
 - **Monthly**: Review ACCEPTED_RISKS.md
 - **Quarterly**: Full security audit
 - **Before release**: Mandatory security gate
+
+**GitHub Actions Status**: ⚠️ Workflow ready, requires `SNYK_TOKEN` secret - see [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md)
 
 ---
 
