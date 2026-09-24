@@ -88,11 +88,11 @@ jobs:
           npm audit --production || echo "NPM_AUDIT_FAILED=true" >> $GITHUB_ENV
       
       - name: Setup Snyk
-        if: secrets.SNYK_TOKEN != ''
+        if: ${{ secrets.SNYK_TOKEN != '' }}
         uses: snyk/actions/setup@master
       
       - name: Run Snyk (Backend)
-        if: secrets.SNYK_TOKEN != ''
+        if: ${{ secrets.SNYK_TOKEN != '' }}
         id: snyk-backend
         continue-on-error: true
         env:
