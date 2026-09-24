@@ -1,0 +1,230 @@
+name: Security Scan (Weekly)
+
+on:
+  schedule:
+    # Every Monday at 09:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:  # Manual trigger
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/package-lock.json'
+      - 'mobile/pubspec.lock'
+      - '.github/workflows/security-scan.yml'
+
+jobs:
+  security-scan:
+    name: CVE Scan (Snyk + OSV + npm audit)
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      issues: write  # For creating issues on findings
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+          channel: 'stable'
+          cache: true
+      
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm ci --production
+      
+      - name: Generate SBOM (for Snyk mobile scan)
+        run: |
+          # CycloneDX SBOM for mobile
+          npm install -g @cyclonedx/cyclonedx-npm
+          cd mobile
+          flutter pub get
+          # Note: CycloneDX Dart plugin would go here
+          # For now, we'll use package-lock.json for backend
+      
+      - name: Install OSV Scanner
+        run: |
+          wget -q https://github.com/google/osv-scanner/releases/download/v1.4.3/osv-scanner_1.4.3_linux_amd64 -O osv-scanner
+          chmod +x osv-scanner
+          sudo mv osv-scanner /usr/local/bin/
+      
+      - name: Run OSV Scanner
+        id: osv
+        continue-on-error: true
+        run: |
+          mkdir -p docs/sbom
+          osv-scanner scan \
+            --config=osv-scanner.toml \
+            -L backend/package-lock.json \
+            -L mobile/pubspec.lock \
+            --format json \
+            --output docs/sbom/cve-osv.json || echo "OSV_FAILED=true" >> $GITHUB_ENV
+          
+          osv-scanner scan \
+            --config=osv-scanner.toml \
+            -L backend/package-lock.json \
+            -L mobile/pubspec.lock \
+            --format markdown \
+            --output docs/sbom/cve-osv.md || true
+      
+      - name: Run npm audit
+        id: npm-audit
+        continue-on-error: true
+        run: |
+          cd backend
+          npm audit --json > ../docs/sbom/cve-npm-audit.json || true
+          npm audit --production || echo "NPM_AUDIT_FAILED=true" >> $GITHUB_ENV
+      
+      - name: Setup Snyk
+        if: secrets.SNYK_TOKEN != ''
+        uses: snyk/actions/setup@master
+      
+      - name: Run Snyk (Backend)
+        if: secrets.SNYK_TOKEN != ''
+        id: snyk-backend
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          cd backend
+          snyk test \
+            --severity-threshold=high \
+            --file=package-lock.json \
+            --json-file-output=../docs/sbom/cve-snyk-backend.json \
+            || echo "SNYK_BACKEND_FAILED=true" >> $GITHUB_ENV
+      
+      - name: Parse results and create summary
+        id: summary
+        run: |
+          python3 << 'PYTHON'
+          import json
+          from pathlib import Path
+          
+          # Parse OSV
+          osv_file = Path('docs/sbom/cve-osv.json')
+          osv_count = 0
+          if osv_file.exists():
+              data = json.loads(osv_file.read_text() or '{}')
+              for result in data.get('results', []):
+                  for pkg in result.get('packages', []):
+                      osv_count += len(pkg.get('vulnerabilities', []))
+          
+          # Parse npm audit
+          npm_file = Path('docs/sbom/cve-npm-audit.json')
+          npm_high = 0
+          if npm_file.exists():
+              data = json.loads(npm_file.read_text() or '{}')
+              meta = data.get('metadata', {}).get('vulnerabilities', {})
+              npm_high = int(meta.get('high', 0)) + int(meta.get('critical', 0))
+          
+          # Parse Snyk
+          snyk_file = Path('docs/sbom/cve-snyk-backend.json')
+          snyk_count = 0
+          if snyk_file.exists():
+              data = json.loads(snyk_file.read_text() or '{}')
+              snyk_count = len(data.get('vulnerabilities', []))
+          
+          # Create summary
+          summary = f"""## Security Scan Results
+          
+          | Scanner | Findings |
+          |---------|----------|
+          | OSV | {osv_count} |
+          | npm audit | {npm_high} high/critical |
+          | Snyk Backend | {snyk_count} |
+          
+          """
+          
+          Path('scan-summary.md').write_text(summary)
+          
+          # Determine if failed
+          failed = osv_count > 0 or npm_high > 0 or snyk_count > 0
+          print(f"SCAN_FAILED={str(failed).lower()}")
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"failed={str(failed).lower()}\n")
+              f.write(f"osv_count={osv_count}\n")
+              f.write(f"npm_high={npm_high}\n")
+              f.write(f"snyk_count={snyk_count}\n")
+          PYTHON
+      
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results
+          path: docs/sbom/cve-*.json
+          retention-days: 90
+      
+      - name: Create issue on findings
+        if: steps.summary.outputs.failed == 'true' && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('scan-summary.md', 'utf8');
+            const osvCount = '${{ steps.summary.outputs.osv_count }}';
+            const npmHigh = '${{ steps.summary.outputs.npm_high }}';
+            const snykCount = '${{ steps.summary.outputs.snyk_count }}';
+            
+            const body = `${summary}
+            
+            ## Action Required
+            
+            Security vulnerabilities detected in weekly scan.
+            
+            ### Next Steps:
+            1. Review findings: Download artifacts from this run
+            2. Check \`docs/sbom/cve-*.json\` files
+            3. Follow process in \`docs/security/CVE_MANAGEMENT.md\`
+            4. Document fixes in \`docs/security/SECURITY_FIXES.md\`
+            
+            ### Resources:
+            - [CVE Management Process](docs/security/CVE_MANAGEMENT.md)
+            - [Quick fix script](scripts/document-cve-fix.sh)
+            
+            **Scan Date**: ${new Date().toISOString().split('T')[0]}
+            **Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            `;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🔒 Security Scan Alert: ${osvCount + npmHigh + snykCount} findings`,
+              body: body,
+              labels: ['security', 'automated']
+            });
+      
+      - name: Comment on PR (if PR triggered this)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('scan-summary.md', 'utf8');
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Security Scan Results\n\n${summary}\n\nℹ️ Full reports available in workflow artifacts.`
+            });
+      
+      - name: Fail job if critical findings
+        if: steps.summary.outputs.failed == 'true'
+        run: |
+          echo "::error::Critical security findings detected"
+          echo "See docs/security/CVE_MANAGEMENT.md for remediation process"
+          exit 1
+
